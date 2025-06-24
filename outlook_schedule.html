@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+
   <title>Upcoming Events</title>
   <style>
     body {
@@ -310,19 +313,23 @@
       });
     }
 
-    fetch(fileName)
-      .then(r => r.text())
-      .then(data => {
-        if (fileName.endsWith(".csv")) {
-          eventsData = parseCSV(data);
-        }
-        updateTime();
-        setInterval(updateTime, 1000);
-      })
-      .catch(err => {
-        console.error("Failed to load file:", err);
-        document.getElementById('events').innerHTML = `<p>Error loading events<br/>${err}</p>`;
-      });
+	function fetchAndReloadData() {
+	  fetch(fileName)
+		.then(r => r.text())
+		.then(data => {
+		  if (fileName.endsWith(".csv")) {
+			eventsData = parseCSV(data);
+		  }
+		  renderEvents(fakeNow ? new Date(fakeNow.getTime()) : new Date());
+		})
+		.catch(err => {
+		  console.error("Failed to reload file:", err);
+		});
+	}
+
+	fetchAndReloadData();
+	setInterval(updateTime, 1000);
+	setInterval(fetchAndReloadData, 60000); // Refresh CSV every 60 seconds
   </script>
 </body>
 </html>
