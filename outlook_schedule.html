@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Upcoming Events</title>
+  <style>
+    body {
+      background-color: black;
+      color: white;
+      font-family: sans-serif;
+      padding: 2em;
+    }
+
+    h1 {
+      font-size: 2em;
+      text-align: center;
+    }
+
+    .event {
+      background-color: #222;
+      border: 1px solid #555;
+      border-radius: 12px;
+      padding: 1em;
+      margin-bottom: 1em;
+      box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+      position: relative;
+      cursor: pointer;
+    }
+
+    .event strong {
+      font-size: 1.2em;
+      color: #4fc3f7;
+    }
+
+    .time-until {
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      font-size: 0.9em;
+      color: #ccc;
+    }
+
+    .big-time {
+      position: static;
+      font-size: 2em;
+      font-weight: bold;
+      color: #fff;
+      text-align: center;
+    }
+
+    .starting-soon {
+      border-color: orange;
+      animation: pulseOrange 2s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulseOrange {
+      from { box-shadow: 0 0 10px orange; }
+      to { box-shadow: 0 0 20px orange; }
+    }
+
+    .final-countdown {
+      border-color: red;
+      animation: pulseRed 2s infinite alternate ease-in-out;
+      background-color: #400;
+    }
+
+    @keyframes pulseRed {
+      from { box-shadow: 0 0 20px 5px red; background-color: #600; }
+      to { box-shadow: 0 0 40px 15px red; background-color: #900; }
+    }
+
+    .happening-now {
+      border-color: #aeefff;
+      animation: pulseBlue 2s infinite alternate ease-in-out;
+      background-color: #99ccff;
+      color: black;
+    }
+
+    @keyframes pulseBlue {
+      from { box-shadow: 0 0 10px #ffffff; background-color: #cceeff; }
+      to { box-shadow: 0 0 20px #ffffff; background-color: #e0f7ff; }
+    }
+
+    #fullscreen {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: black;
+      color: white;
+      padding: 2em;
+      z-index: 1000;
+      overflow: auto;
+    }
+
+    #fullscreen .content {
+      background: #333;
+      padding: 2em;
+      border-radius: 12px;
+    }
+
+    #fullscreen button {
+      margin-top: 1em;
+      padding: 0.5em 1em;
+      font-size: 1em;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="current-time">Loading time...</h1>
+  <div id="events">Loading events...</div>
+
+  <div id="fullscreen">
+    <div class="content" id="fullscreen-content"></div>
+    <button onclick="document.getElementById('fullscreen').style.display='none'">Close</button>
+  </div>
+
+  <script>
+    const fileName = "calendar.csv";
+	const urlParams = new URLSearchParams(window.location.search);
+	const countParam = urlParams.get('count') || 3;
+	const nowParam = urlParams.get('now');
+	let fakeNow = nowParam ? new Date(nowParam) : null;
+    let eventsData = [];
+
+    function updateTime() {
+      const now = fakeNow ? new Date(fakeNow.getTime()) : new Date();
+      document.getElementById('current-time').innerText = now.toLocaleTimeString();
+
+      if (fakeNow) {
+        fakeNow.setSeconds(fakeNow.getSeconds() + 1);
+      }
+
+      renderEvents(now);
+    }
+	function isSameDay(d1, d2) {
+	  return d1.getFullYear() === d2.getFullYear() &&
+			 d1.getMonth() === d2.getMonth() &&
+			 d1.getDate() === d2.getDate();
+	}
+
+    function renderEvents(now) {
+	  const eventsDiv = document.getElementById('events');
+	  
+	  let filtered = eventsData
+		.filter(e => {
+		  const endDate = new Date(e.end);
+		  const include = e.rsvp !== 'declined' && endDate >= now && e.ooo !== 'yes';
+		  return include;
+		})
+    .sort((a, b) => new Date(a.start) - new Date(b.start));
+
+  if (/^\d+$/.test(countParam)) {
+    filtered = filtered.slice(0, parseInt(countParam));
+  } else if (countParam === 'today') {
+    filtered = filtered.filter(e => isSameDay(new Date(e.start), now));
+  } else if (countParam === 'tomorrow') {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    filtered = filtered.filter(e => isSameDay(new Date(e.start), tomorrow));
+  } else if (countParam === 'this_week') {
+    const endOfWeek = new Date(now);
+    endOfWeek.setDate(now.getDate() + (7 - now.getDay()));
+    endOfWeek.setHours(23, 59, 59, 999);
+    filtered = filtered.filter(e => new Date(e.start) <= endOfWeek);
+  } else if (countParam !== 'all') {
+    filtered = filtered.slice(0, 3);
+  }
+
+  eventsDiv.innerHTML = filtered.map((e, index) => {
+    const start = new Date(e.start);
+    const end = new Date(e.end);
+    const isHappening = (start <= now) && (end > now);
+    const msUntil = start - now;
+    const isFinalCountdown = msUntil > 0 && msUntil <= 2 * 60 * 1000;
+    const isSoon = msUntil > 2 * 60 * 1000 && msUntil < 10 * 60 * 1000;
+
+    let cssClass = 'event';
+    if (isHappening) cssClass += ' happening-now';
+    else if (isFinalCountdown) cssClass += ' final-countdown';
+    else if (isSoon) cssClass += ' starting-soon';
+
+    let timeUntil = '';
+    let timeClass = 'time-until';
+    if (msUntil > 0) {
+      if (msUntil < 10 * 60 * 1000) timeClass = 'big-time';
+      timeUntil = formatDuration(msUntil);
+    } else if (end > now) {
+      timeUntil = 'Happening now';
+    } else {
+      timeUntil = 'Started';
+    }
+
+    return `<div class="${cssClass}" onclick="showDetails(${eventsData.indexOf(e)})">
+      <strong>${e.summary}</strong><br/>
+      ${formatDateTime(start)}
+      <div class="${timeClass}">${timeUntil}</div>
+    </div>`;
+  }).join('');
+}
+
+
+
+    function formatDuration(ms) {
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+      const days = Math.floor(totalSeconds / (60 * 60 * 24));
+      const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      let parts = [];
+      if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
+      if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
+      if (minutes > 0) parts.push(`${minutes} minute${minutes !== 1 ? 's' : ''}`);
+      if (totalSeconds < 60) parts.push(`${seconds} second${seconds !== 1 ? 's' : ''}`);
+
+      return parts.join(' ');
+    }
+
+    function formatDateTime(date) {
+      return date.toLocaleString(undefined, {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+
+    function showDetails(index) {
+      const e = eventsData[index];
+      const content = `
+        <h2>${e.summary}</h2>
+        <p><strong>Start:</strong> ${formatDateTime(new Date(e.start))}</p>
+        <p><strong>End:</strong> ${formatDateTime(new Date(e.end))}</p>
+        <p><strong>RSVP:</strong> ${e.rsvp}</p>
+        <p><strong>Private:</strong> ${e.private}</p>
+        <p><strong>Description:</strong> ${e.private === 'yes' ? 'Details hidden' : (e.description || 'No description')}</p>
+      `;
+      document.getElementById('fullscreen-content').innerHTML = content;
+      document.getElementById('fullscreen').style.display = 'block';
+    }
+
+    function parseCSV(data) {
+	  const lines = data.trim().split(/\r?\n/);
+	  if (lines.length < 2) {
+		console.warn("No data lines found in CSV");
+		return [];
+	  }
+
+	  const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+	  const events = lines.slice(1).map((line, lineIndex) => {
+		const values = [];
+		let current = '';
+		let inQuotes = false;
+
+		for (let char of line) {
+		  if (char === '"') {
+			inQuotes = !inQuotes;
+		  } else if (char === ',' && !inQuotes) {
+			values.push(current.trim().replace(/^"|"$/g, ''));
+			current = '';
+		  } else {
+			current += char;
+		  }
+		}
+		values.push(current.trim().replace(/^"|"$/g, ''));
+
+		const obj = {};
+		headers.forEach((h, i) => {
+		  obj[h] = values[i] || "";
+		});
+
+		const startDate = obj["start"] ? new Date(obj["start"].replace(" ", "T")) : null;
+		const endDate = obj["end"] ? new Date(obj["end"].replace(" ", "T")) : null;
+
+		return {
+		  summary: obj["subject"] || "No subject",
+		  start: obj["start"],
+		  end: obj["end"],
+		  description: obj["description"] || "",
+		  rsvp: (obj["rsvp"] || "").toLowerCase(),
+		  ooo: (obj["ooo"] || "").toLowerCase(),
+		  private: (obj["private"] || "").toLowerCase()
+		};
+	  });
+
+	  //console.log("Finished parsing CSV. Total events:", events.length);
+	  return events;
+	}
+
+
+    fetch(fileName)
+      .then(r => r.text())
+      .then(data => {
+        if (fileName.endsWith(".csv")) {
+          eventsData = parseCSV(data);
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+      })
+      .catch(err => {
+        console.error("Failed to load file:", err);
+        document.getElementById('events').innerHTML = `<p>Error loading events<br/>${err}</p>`;
+      });
+  </script>
+</body>
+</html>
