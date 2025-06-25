@@ -3,8 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-
   <title>Upcoming Events</title>
   <style>
     body {
@@ -13,12 +11,18 @@
       font-family: sans-serif;
       padding: 2em;
     }
-
     h1 {
       font-size: 2em;
       text-align: center;
     }
-
+	#fullscreen {
+	  display: none;
+	  position: fixed;
+	  inset: 0;
+	  background: rgba(0,0,0,0.95);
+	  z-index: 1000;
+	  padding: 3em 1em 1em 1em;
+	}
     .event {
       background-color: #222;
       border: 1px solid #555;
@@ -28,13 +32,12 @@
       box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
       position: relative;
       cursor: pointer;
+      transition: transform 0.5s ease, opacity 0.5s ease;
     }
-
     .event strong {
       font-size: 1.2em;
       color: #4fc3f7;
     }
-
     .time-until {
       position: absolute;
       bottom: 8px;
@@ -42,7 +45,6 @@
       font-size: 0.9em;
       color: #ccc;
     }
-
     .big-time {
       position: static;
       font-size: 2em;
@@ -50,62 +52,131 @@
       color: #fff;
       text-align: center;
     }
-
     .starting-soon {
       border-color: orange;
       animation: pulseOrange 2s infinite alternate ease-in-out;
     }
-
     @keyframes pulseOrange {
       from { box-shadow: 0 0 10px orange; }
       to { box-shadow: 0 0 20px orange; }
     }
-
     .final-countdown {
       border-color: red;
       animation: pulseRed 2s infinite alternate ease-in-out;
       background-color: #400;
     }
-
     @keyframes pulseRed {
       from { box-shadow: 0 0 20px 5px red; background-color: #600; }
       to { box-shadow: 0 0 40px 15px red; background-color: #900; }
     }
-
     .happening-now {
       border-color: #aeefff;
       animation: pulseBlue 2s infinite alternate ease-in-out;
       background-color: #99ccff;
       color: black;
     }
-
     @keyframes pulseBlue {
       from { box-shadow: 0 0 10px #ffffff; background-color: #cceeff; }
       to { box-shadow: 0 0 20px #ffffff; background-color: #e0f7ff; }
     }
-
-    #fullscreen {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: black;
-      color: white;
-      padding: 2em;
-      z-index: 1000;
-      overflow: auto;
+    .slide-out {
+      transform: translateX(-100%);
+      opacity: 0;
     }
-
-    #fullscreen .content {
-      background: #333;
-      padding: 2em;
-      border-radius: 12px;
+    .slide-in {
+      transform: translateX(100%);
+      opacity: 0;
     }
-
-    #fullscreen button {
-      margin-top: 1em;
-      padding: 0.5em 1em;
-      font-size: 1em;
+    .slide-in-active {
+      transform: translateX(0);
+      opacity: 1;
     }
+	.event-animating {
+	  transition: transform 0.5s cubic-bezier(.34,1.56,.64,1);
+	  z-index: 0;
+	}
+.details-card {
+  background: #16181e;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(80,200,255,0.12);
+  padding: 2em 2em 1.5em 2em;
+  color: #fff;
+  max-width: 450px;
+  margin: 2em auto 0 auto;
+  font-size: 1.08em;
+  border: 1.5px solid #4fc3f7;
+}
+
+.details-title {
+  font-size: 1.7em;
+  color: #4fc3f7;
+  font-weight: 600;
+  margin-bottom: 0.4em;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
+.details-row {
+  margin-bottom: 0.7em;
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.5em;
+}
+
+.details-label {
+  color: #aeefff;
+  min-width: 90px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.details-date {
+  font-size: 1.1em;
+  color: #fff;
+  font-weight: 500;
+  margin-bottom: 1em;
+}
+
+.details-description {
+  margin-top: 1.5em;
+  font-size: 1em;
+  color: #dbefff;
+  line-height: 1.5;
+}
+
+.details-description .details-label {
+  min-width: 0;
+  font-weight: 600;
+  color: #4fc3f7;
+}
+
+.close-btn {
+  position: absolute;
+  top: 1em;
+  right: 1.2em;
+  background: #0c1820;
+  color: #4fc3f7;
+  border: none;
+  font-size: 2em;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 1.6em;
+  height: 1.6em;
+  line-height: 1.2em;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 2px 10px #0005;
+  transition: background 0.2s, color 0.2s;
+  z-index: 10;
+}
+.close-btn:hover {
+  background: #223344;
+  color: #fff;
+}
+.details-card {
+  position: relative; /* Needed for the close button’s absolute positioning */
+}
+
 
     .date-divider {
       border-top: 2px solid #4fc3f7;
@@ -113,51 +184,118 @@
       padding-top: 0.5em;
       font-size: 1.2em;
       color: #4fc3f7;
+      text-align: center;
     }
+	.event-time-row {
+	  display: flex;
+	  align-items: center;
+	  gap: 1.3em;
+	  font-size: 1.02em;
+	  margin-bottom: 0.5em;
+	}
+
+	.event-duration {
+	  color: #bbb;
+	  font-size: 0.99em;
+	}
+
+	.event-dot {
+	  color: #4fc3f7;
+	  font-size: 1.3em;
+	  line-height: 0.5;
+	  margin-top: -2px;
+	}
+
   </style>
 </head>
 <body>
   <h1 id="current-time">Loading time...</h1>
-  <div id="events">Loading events...</div>
-
+  <div id="events"></div>
   <div id="fullscreen">
-    <div class="content" id="fullscreen-content"></div>
-    <button onclick="document.getElementById('fullscreen').style.display='none'">Close</button>
-  </div>
+	  <div class="content" id="fullscreen-content"></div>
+	</div>
 
   <script>
     const fileName = "calendar.csv";
     const urlParams = new URLSearchParams(window.location.search);
     const countParam = urlParams.get('count') || 3;
     const nowParam = urlParams.get('now');
+	const privateOverride = urlParams.get('private') === '1';
+	const transparentBg = urlParams.get('trans') === '1';
+
+	if (transparentBg) {
+	  const style = document.createElement('style');
+	  style.textContent = `
+		body { background: transparent !important; }
+		#fullscreen { background: transparent !important; }
+		.details-card, .event {
+		  background: rgba(30,40,60,0.8) !important;
+		}
+	  `;
+	  document.head.appendChild(style);
+	}
+
+	
     let fakeNow = nowParam ? new Date(nowParam) : null;
     let eventsData = [];
 
     function updateTime() {
-      const now = fakeNow ? new Date(fakeNow.getTime()) : new Date();
-      document.getElementById('current-time').innerText = now.toLocaleTimeString();
+	  const now = fakeNow ? new Date(fakeNow.getTime()) : new Date();
+	  document.getElementById('current-time').innerText = now.toLocaleTimeString();
+	  if (fakeNow) fakeNow.setSeconds(fakeNow.getSeconds() + 1);
 
-      if (fakeNow) {
-        fakeNow.setSeconds(fakeNow.getSeconds() + 1);
-      }
+	  // Only updates timers, does not trigger full render
+	  Array.from(document.querySelectorAll('.event')).forEach(el => {
+		const start = new Date(el.dataset.start);
+		const end = new Date(el.dataset.end);
+		const msUntil = start - now;
+		const msUntilEnd = end - now;
+		const timeDiv = el.querySelector('.time-until, .big-time');
 
-      renderEvents(now);
-    }
+		// --- NEW LOGIC TO UPDATE COLOURS/CLASSES DYNAMICALLY ---
+		// Remove all possible state classes
+		el.classList.remove('happening-now', 'final-countdown', 'starting-soon');
+		// Add correct class for current time
+		if ((start <= now) && (end > now)) {
+		  el.classList.add('happening-now');
+		} else if (msUntil > 0 && msUntil <= 2 * 60 * 1000) {
+		  el.classList.add('final-countdown');
+		} else if (msUntil > 2 * 60 * 1000 && msUntil < 10 * 60 * 1000) {
+		  el.classList.add('starting-soon');
+		}
+		// --------------------------------------------------------
 
-    function isSameDay(d1, d2) {
-      return d1.getFullYear() === d2.getFullYear() &&
-             d1.getMonth() === d2.getMonth() &&
-             d1.getDate() === d2.getDate();
+		if (end <= now && !el.classList.contains('slide-out')) {
+		  el.classList.remove('slide-in', 'slide-in-active');
+		  el.classList.add('slide-out');
+		  setTimeout(() => el.remove(), 500);
+		}
+		if (timeDiv) {
+		  timeDiv.className = (msUntil > 0 && msUntil < 10 * 60 * 1000) ? 'big-time' : 'time-until';
+		  timeDiv.textContent = msUntil > 0 ? formatDuration(msUntil) : (end > now ? 'Happening now' : 'Started');
+		}
+	  });
+	}
+
+	function formatDurationMinutes(start, end) {
+	  const ms = end - start;
+	  const totalMinutes = Math.round(ms / 60000);
+	  const hours = Math.floor(totalMinutes / 60);
+	  const minutes = totalMinutes % 60;
+	  let text = '';
+	  if (hours > 0) text += `${hours} hour${hours !== 1 ? 's' : ''} `;
+	  if (minutes > 0 || hours === 0) text += `${minutes} min${minutes !== 1 ? 's' : ''}`;
+	  return text.trim();
+	}
+
+    function generateId(e) {
+      return `${e.start}_${e.summary}`;
     }
 
     function renderEvents(now) {
-      const eventsDiv = document.getElementById('events');
+	 console.log('Checking/updating ticket state (renderEvents) at', now.toLocaleTimeString());
       let filtered = eventsData
-        .filter(e => {
-          const endDate = new Date(e.end);
-          const include = e.rsvp !== 'declined' && endDate >= now && e.ooo !== 'yes';
-          return include;
-        })
+        .filter(e => e.rsvp !== 'declined' && new Date(e.end) >= now && e.ooo !== 'yes')
         .sort((a, b) => new Date(a.start) - new Date(b.start));
 
       if (/^\d+$/.test(countParam)) {
@@ -177,50 +315,217 @@
         filtered = filtered.slice(0, 3);
       }
 
-      let lastDateStr = '';
-      eventsDiv.innerHTML = filtered.map(e => {
-        const start = new Date(e.start);
-        const end = new Date(e.end);
-        const dateStr = start.toLocaleDateString(undefined, {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        });
+      const eventsDiv = document.getElementById('events');
+      const existingEls = Array.from(eventsDiv.querySelectorAll('.event'));
+      const newIds = filtered.map(generateId);
+      const elsToRemove = existingEls.filter(el => !newIds.includes(el.dataset.id));
+      const newEvents = filtered.filter(e => !document.querySelector(`[data-id="${generateId(e)}"]`));
 
-        let dividerHTML = '';
-        if (dateStr !== lastDateStr) {
-          dividerHTML = `<div class="date-divider">${dateStr}</div>`;
-          lastDateStr = dateStr;
-        }
+      removeEventsSequentially(elsToRemove, () => {
+        insertEventsSequentially(newEvents, now);
+      });
+    }
 
-        const isHappening = (start <= now) && (end > now);
-        const msUntil = start - now;
-        const isFinalCountdown = msUntil > 0 && msUntil <= 2 * 60 * 1000;
-        const isSoon = msUntil > 2 * 60 * 1000 && msUntil < 10 * 60 * 1000;
+    function removeEventsSequentially(els, callback, index = 0) {
+		  if (index >= els.length) return callback();
+		  const el = els[index];
+		  el.classList.remove('slide-in', 'slide-in-active');
+		  el.classList.add('slide-out');
 
-        let cssClass = 'event';
-        if (isHappening) cssClass += ' happening-now';
-        else if (isFinalCountdown) cssClass += ' final-countdown';
-        else if (isSoon) cssClass += ' starting-soon';
+		  const eventsDiv = document.getElementById('events');
+		  // Remove slide-in/out classes from ALL other events before FLIP
+		  Array.from(eventsDiv.children).forEach(child => {
+			if (child.classList && child.classList.contains('event') && child !== el) {
+			  child.classList.remove('slide-in', 'slide-in-active', 'slide-out');
+			}
+		  });
 
-        let timeUntil = '';
-        let timeClass = 'time-until';
-        if (msUntil > 0) {
-          if (msUntil < 10 * 60 * 1000) timeClass = 'big-time';
-          timeUntil = formatDuration(msUntil);
-        } else if (end > now) {
-          timeUntil = 'Happening now';
-        } else {
-          timeUntil = 'Started';
-        }
+		  // 1. Get pre-removal positions
+		  const prevRects = [];
+		  Array.from(eventsDiv.children).forEach(child => {
+			if (child !== el && child.classList.contains('event')) {
+			  prevRects.push({
+				el: child,
+				top: child.getBoundingClientRect().top
+			  });
+			}
+		  });
 
-        return dividerHTML + `<div class="${cssClass}" onclick="showDetails(${eventsData.indexOf(e)})">
-          <strong>${e.summary}</strong><br/>
-          ${formatTimeOnly(start)}
-          <div class="${timeClass}">${timeUntil}</div>
-        </div>`;
-      }).join('');
+		  setTimeout(() => {
+			el.remove();
+
+			// 2. Get new positions
+			const newRects = [];
+			Array.from(eventsDiv.children).forEach(child => {
+			  if (child.classList.contains('event')) {
+				newRects.push({
+				  el: child,
+				  top: child.getBoundingClientRect().top
+				});
+			  }
+			});
+
+			// 3. Calculate movement and animate
+			newRects.forEach((newRect, i) => {
+			  const prevRect = prevRects.find(r => r.el === newRect.el);
+			  if (prevRect) {
+				const dy = prevRect.top - newRect.top;
+				if (dy) {
+				  newRect.el.classList.add('event-animating');
+				  newRect.el.style.transform = `translateY(${dy}px)`;
+				  void newRect.el.offsetWidth;
+				  newRect.el.style.transform = '';
+				  setTimeout(() => newRect.el.classList.remove('event-animating'), 500);
+				}
+			  }
+			});
+
+			removeEventsSequentially(els, callback, index + 1);
+		  }, 500);
+		}
+
+	function showDetailsById(id) {
+	  const e = eventsData.find(ev => generateId(ev) === id);
+	  if (!e) {
+		alert("Sorry, event not found.");
+		return;
+	  }
+
+	  const startDate = new Date(e.start);
+	  const endDate = new Date(e.end);
+
+	  // Fancy time/date strings
+	  const dateString = startDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+	  const startTime = formatTimeOnly(startDate);
+	  const endTime = formatTimeOnly(endDate);
+
+	  // Duration
+	  const duration = formatDurationMinutes(startDate, endDate);
+
+	  // RSVP/Privacy
+	  const rsvp = e.rsvp.charAt(0).toUpperCase() + e.rsvp.slice(1);
+	  const privacy = e.private === 'yes' ? "Private" : "Public";
+
+	  // Content layout
+	  document.getElementById('fullscreen-content').innerHTML = `
+		  <div class="details-card">
+			<button class="close-btn" onclick="document.getElementById('fullscreen').style.display='none'">&times;</button>
+			<div class="details-title">${e.summary}</div>
+			<div class="details-row details-date"><span class="details-label">Date:</span> ${dateString}</div>
+			<div class="details-row"><span class="details-label">Time:</span> ${startTime} &ndash; ${endTime}</div>
+			<div class="details-row"><span class="details-label">Duration:</span> ${duration}</div>
+			<div class="details-row"><span class="details-label">RSVP:</span> ${rsvp}</div>
+			<div class="details-row"><span class="details-label">Privacy:</span> ${privacy}</div>
+			<div class="details-description">
+			  <span class="details-label">Description:</span>
+			  <span>
+				${(privateOverride || e.private !== 'yes')
+				   ? (e.description || '<i>No description</i>')
+				   : '<i>Details hidden</i>'}
+			  </span>
+			</div>
+		  </div>
+		`;
+
+	  document.getElementById('fullscreen').style.display = 'block';
+	}
+
+
+    function insertEventsSequentially(events, now, index = 0, lastDateStr = '') {
+      if (index >= events.length) return;
+      const e = events[index];
+      const id = generateId(e);
+      const start = new Date(e.start);
+      const end = new Date(e.end);
+      const msUntil = start - now;
+
+      let cssClass = 'event';
+      if ((start <= now) && (end > now)) cssClass += ' happening-now';
+      else if (msUntil > 0 && msUntil <= 2 * 60 * 1000) cssClass += ' final-countdown';
+      else if (msUntil > 2 * 60 * 1000 && msUntil < 10 * 60 * 1000) cssClass += ' starting-soon';
+
+      let timeClass = 'time-until';
+      if (msUntil > 0 && msUntil < 10 * 60 * 1000) timeClass = 'big-time';
+
+      const dateStr = start.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+      const eventsDiv = document.getElementById('events');
+
+      if (dateStr !== lastDateStr) {
+		  // Check if there's already a divider for this date just before the current event's place
+		  let needDivider = true;
+		  let insertBefore = null;
+
+		  // Find the correct insertion point for the event, and check if divider is present
+		  for (let child of eventsDiv.children) {
+			if (child.classList.contains('event')) {
+			  const childStart = new Date(child.dataset.start);
+			  const childDateStr = childStart.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+			  if (dateStr === childDateStr) {
+				// Check if the previous sibling is already a divider for this date
+				if (child.previousElementSibling && child.previousElementSibling.classList.contains('date-divider') && child.previousElementSibling.textContent === dateStr) {
+				  needDivider = false;
+				} else {
+				  insertBefore = child;
+				}
+				break;
+			  }
+			}
+		  }
+
+		  if (needDivider) {
+			const divider = document.createElement('div');
+			divider.className = 'date-divider';
+			divider.textContent = dateStr;
+			if (insertBefore) {
+			  eventsDiv.insertBefore(divider, insertBefore);
+			} else {
+			  eventsDiv.appendChild(divider);
+			}
+		  }
+
+		  lastDateStr = dateStr;
+		}
+
+
+      const el = document.createElement('div');
+      el.className = cssClass + ' slide-in';
+      el.dataset.id = id;
+      el.dataset.start = e.start;
+      el.dataset.end = e.end;
+      el.dataset.msUntil = msUntil;
+      el.onclick = () => showDetailsById(id);
+      el.innerHTML = `
+		  <strong>${e.summary}</strong><br/>
+		  <span class="event-time-row">
+			<span>${formatTimeOnly(start)}</span>
+			<span class="event-duration">(${formatDurationMinutes(start, end)})</span>
+		  </span>
+		  <div class="${timeClass}">${formatDuration(msUntil)}</div>
+		`;
+
+		// Find correct place to insert based on start time
+		let inserted = false;
+		for (let child of eventsDiv.children) {
+		  if (child.classList.contains('event')) {
+			const childStart = new Date(child.dataset.start);
+			if (start < childStart) {
+			  eventsDiv.insertBefore(el, child);
+			  inserted = true;
+			  break;
+			}
+		  }
+		}
+		if (!inserted) eventsDiv.appendChild(el);
+      void el.offsetWidth;
+      el.classList.add('slide-in-active');
+
+      setTimeout(() => insertEventsSequentially(events, now, index + 1, lastDateStr), 300);
+    }
+
+    function isSameDay(d1, d2) {
+      return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
     }
 
     function formatDuration(ms) {
@@ -229,78 +534,35 @@
       const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / 3600);
       const minutes = Math.floor((totalSeconds % 3600) / 60);
       const seconds = totalSeconds % 60;
-
       let parts = [];
       if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
       if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
       if (minutes > 0) parts.push(`${minutes} minute${minutes !== 1 ? 's' : ''}`);
       if (totalSeconds < 60) parts.push(`${seconds} second${seconds !== 1 ? 's' : ''}`);
-
       return parts.join(' ');
     }
 
-    function formatDateTime(date) {
-      return date.toLocaleString(undefined, {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
+    function formatTimeOnly(date) {
+      return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
     }
-	function formatTimeOnly(date) {
-	  return date.toLocaleTimeString(undefined, {
-		hour: 'numeric',
-		minute: '2-digit',
-		hour12: true
-	  });
-	}
 
-    function showDetails(index) {
-      const e = eventsData[index];
-      const content = `
-        <h2>${e.summary}</h2>
-        <p><strong>Start:</strong> ${formatTimeOnly(new Date(e.start))}</p>
-        <p><strong>End:</strong> ${formatTimeOnly(new Date(e.end))}</p>
-        <p><strong>RSVP:</strong> ${e.rsvp}</p>
-        <p><strong>Private:</strong> ${e.private}</p>
-        <p><strong>Description:</strong> ${e.private === 'yes' ? 'Details hidden' : (e.description || 'No description')}</p>
-      `;
-      document.getElementById('fullscreen-content').innerHTML = content;
-      document.getElementById('fullscreen').style.display = 'block';
-    }
+    
 
     function parseCSV(data) {
       const lines = data.trim().split(/\r?\n/);
-      if (lines.length < 2) {
-        console.warn("No data lines found in CSV");
-        return [];
-      }
-
+      if (lines.length < 2) return [];
       const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
       return lines.slice(1).map(line => {
         const values = [];
-        let current = '';
-        let inQuotes = false;
-
+        let current = '', inQuotes = false;
         for (let char of line) {
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
-            values.push(current.trim().replace(/^"|"$/g, ''));
-            current = '';
-          } else {
-            current += char;
-          }
+          if (char === '"') inQuotes = !inQuotes;
+          else if (char === ',' && !inQuotes) { values.push(current.trim().replace(/^"|"$/g, '')); current = ''; }
+          else current += char;
         }
         values.push(current.trim().replace(/^"|"$/g, ''));
-
         const obj = {};
-        headers.forEach((h, i) => {
-          obj[h] = values[i] || "";
-        });
-
+        headers.forEach((h, i) => obj[h] = values[i] || "");
         return {
           summary: obj["subject"] || "No subject",
           start: obj["start"],
@@ -313,23 +575,35 @@
       });
     }
 
-	function fetchAndReloadData() {
-	  fetch(fileName)
-		.then(r => r.text())
-		.then(data => {
-		  if (fileName.endsWith(".csv")) {
-			eventsData = parseCSV(data);
-		  }
-		  renderEvents(fakeNow ? new Date(fakeNow.getTime()) : new Date());
-		})
-		.catch(err => {
-		  console.error("Failed to reload file:", err);
-		});
-	}
+    function fetchAndReloadData() {
+	  console.log('Reloading event data (fetchAndReloadData) at', new Date().toLocaleTimeString());
+      fetch(fileName)
+        .then(r => r.text())
+        .then(data => {
+          if (fileName.endsWith(".csv")) {
+            eventsData = parseCSV(data);
+          }
+          renderEvents(fakeNow ? new Date(fakeNow.getTime()) : new Date());
+        })
+        .catch(err => console.error("Failed to reload file:", err));
+    }
 
-	fetchAndReloadData();
+    fetchAndReloadData();
 	setInterval(updateTime, 1000);
-	setInterval(fetchAndReloadData, 60000); // Refresh CSV every 60 seconds
+
+	function scheduleNextReload() {
+	  const now = fakeNow ? new Date(fakeNow.getTime()) : new Date();
+	  let msToNext = (60 - now.getSeconds() + 1) % 60 * 1000 - now.getMilliseconds();
+	  if (msToNext <= 0) msToNext += 60000; // just in case
+	  console.log('msToNext:', msToNext);
+	  
+	  setTimeout(() => {
+		fetchAndReloadData();
+		setInterval(fetchAndReloadData, 60000); // After first precise reload, just repeat every minute
+	  }, msToNext);
+	}
+	scheduleNextReload();
+
   </script>
 </body>
 </html>
