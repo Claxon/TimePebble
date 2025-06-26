@@ -1,4 +1,21 @@
 <!DOCTYPE html>
+<!-- 
+  === URL Parameters ===
+  You can modify the page behavior using query parameters:
+
+    ?count=3         → Show only the next 3 upcoming events (default if not specified)
+    ?count=today     → Show only events happening today
+    ?count=tomorrow  → Show only events happening tomorrow
+    ?count=this_week → Show events for the current week
+    ?count=all       → Show all future events
+
+    ?now=2025-06-26T15:30:00 
+        → Simulate the current time (useful for testing)
+        Format: ISO 8601 (e.g. YYYY-MM-DDTHH:mm:ss)
+
+    ?private=1       → Force private event details to be visible
+    ?trans=1         → Makes the background transparent for embedding over a video/slideshow
+-->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -95,87 +112,87 @@
 	  transition: transform 0.5s cubic-bezier(.34,1.56,.64,1);
 	  z-index: 0;
 	}
-.details-card {
-  background: #16181e;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(80,200,255,0.12);
-  padding: 2em 2em 1.5em 2em;
-  color: #fff;
-  max-width: 450px;
-  margin: 2em auto 0 auto;
-  font-size: 1.08em;
-  border: 1.5px solid #4fc3f7;
-}
+	.details-card {
+	  background: #16181e;
+	  border-radius: 16px;
+	  box-shadow: 0 4px 24px rgba(80,200,255,0.12);
+	  padding: 2em 2em 1.5em 2em;
+	  color: #fff;
+	  max-width: 450px;
+	  margin: 2em auto 0 auto;
+	  font-size: 1.08em;
+	  border: 1.5px solid #4fc3f7;
+	}
 
-.details-title {
-  font-size: 1.7em;
-  color: #4fc3f7;
-  font-weight: 600;
-  margin-bottom: 0.4em;
-  text-align: center;
-  letter-spacing: 0.01em;
-}
+	.details-title {
+	  font-size: 1.7em;
+	  color: #4fc3f7;
+	  font-weight: 600;
+	  margin-bottom: 0.4em;
+	  text-align: center;
+	  letter-spacing: 0.01em;
+	}
 
-.details-row {
-  margin-bottom: 0.7em;
-  display: flex;
-  justify-content: flex-start;
-  gap: 0.5em;
-}
+	.details-row {
+	  margin-bottom: 0.7em;
+	  display: flex;
+	  justify-content: flex-start;
+	  gap: 0.5em;
+	}
 
-.details-label {
-  color: #aeefff;
-  min-width: 90px;
-  font-weight: 500;
-  display: inline-block;
-}
+	.details-label {
+	  color: #aeefff;
+	  min-width: 90px;
+	  font-weight: 500;
+	  display: inline-block;
+	}
 
-.details-date {
-  font-size: 1.1em;
-  color: #fff;
-  font-weight: 500;
-  margin-bottom: 1em;
-}
+	.details-date {
+	  font-size: 1.1em;
+	  color: #fff;
+	  font-weight: 500;
+	  margin-bottom: 1em;
+	}
 
-.details-description {
-  margin-top: 1.5em;
-  font-size: 1em;
-  color: #dbefff;
-  line-height: 1.5;
-}
+	.details-description {
+	  margin-top: 1.5em;
+	  font-size: 1em;
+	  color: #dbefff;
+	  line-height: 1.5;
+	}
 
-.details-description .details-label {
-  min-width: 0;
-  font-weight: 600;
-  color: #4fc3f7;
-}
+	.details-description .details-label {
+	  min-width: 0;
+	  font-weight: 600;
+	  color: #4fc3f7;
+	}
 
-.close-btn {
-  position: absolute;
-  top: 1em;
-  right: 1.2em;
-  background: #0c1820;
-  color: #4fc3f7;
-  border: none;
-  font-size: 2em;
-  font-weight: bold;
-  border-radius: 50%;
-  width: 1.6em;
-  height: 1.6em;
-  line-height: 1.2em;
-  text-align: center;
-  cursor: pointer;
-  box-shadow: 0 2px 10px #0005;
-  transition: background 0.2s, color 0.2s;
-  z-index: 10;
-}
-.close-btn:hover {
-  background: #223344;
-  color: #fff;
-}
-.details-card {
-  position: relative; /* Needed for the close button’s absolute positioning */
-}
+	.close-btn {
+	  position: absolute;
+	  top: 1em;
+	  right: 1.2em;
+	  background: #0c1820;
+	  color: #4fc3f7;
+	  border: none;
+	  font-size: 2em;
+	  font-weight: bold;
+	  border-radius: 50%;
+	  width: 1.6em;
+	  height: 1.6em;
+	  line-height: 1.2em;
+	  text-align: center;
+	  cursor: pointer;
+	  box-shadow: 0 2px 10px #0005;
+	  transition: background 0.2s, color 0.2s;
+	  z-index: 10;
+	}
+	.close-btn:hover {
+	  background: #223344;
+	  color: #fff;
+	}
+	.details-card {
+	  position: relative; /* Needed for the close button’s absolute positioning */
+	}
 
 
     .date-divider {
@@ -205,6 +222,37 @@
 	  line-height: 0.5;
 	  margin-top: -2px;
 	}
+	
+	/* Glow and pop-in for auto-triggered details */
+	@keyframes popIn {
+	  from {
+		transform: scale(0.6);
+		opacity: 0;
+	  }
+	  to {
+		transform: scale(1);
+		opacity: 1;
+	  }
+	}
+#fullscreen.auto-glow .details-card {
+  animation: popIn 0.3s ease-out, pulseJoinNow 0.6s ease-in-out infinite alternate;
+  border-color: #33f3ff;
+  box-shadow: 0 0 40px 20px #33f3ff;
+  z-index: 2000;
+}
+
+@keyframes pulseJoinNow {
+  from {
+    box-shadow: 0 0 40px 10px #33f3ff;
+    background-color: #0a2c38;
+    border-color: #33f3ff;
+  }
+  to {
+    box-shadow: 0 0 90px 40px #66fcff;
+    background-color: #00475c;
+    border-color: #66fcff;
+  }
+}
 
   </style>
 </head>
@@ -222,6 +270,9 @@
     const nowParam = urlParams.get('now');
 	const privateOverride = urlParams.get('private') === '1';
 	const transparentBg = urlParams.get('trans') === '1';
+	const shownEventDetails = new Set();
+	let autoCloseTimeout = null;
+	const autoCloseDuration = 30000;
 
 	if (transparentBg) {
 	  const style = document.createElement('style');
@@ -257,7 +308,14 @@
 		el.classList.remove('happening-now', 'final-countdown', 'starting-soon');
 		// Add correct class for current time
 		if ((start <= now) && (end > now)) {
+	
 		  el.classList.add('happening-now');
+		  const eventId = el.dataset.id;
+		  if (!shownEventDetails.has(eventId)) {
+			shownEventDetails.add(eventId);
+			showDetailsById(eventId, { glow: true });
+		  }
+
 		} else if (msUntil > 0 && msUntil <= 2 * 60 * 1000) {
 		  el.classList.add('final-countdown');
 		} else if (msUntil > 2 * 60 * 1000 && msUntil < 10 * 60 * 1000) {
@@ -384,12 +442,31 @@
 		  }, 500);
 		}
 
-	function showDetailsById(id) {
+	function showDetailsById(id, options = {}) {
 	  const e = eventsData.find(ev => generateId(ev) === id);
 	  if (!e) {
 		alert("Sorry, event not found.");
 		return;
 	  }
+
+		const fullscreen = document.getElementById('fullscreen');
+		// Cancel any previous auto-close
+		  if (autoCloseTimeout) {
+			clearTimeout(autoCloseTimeout);
+			autoCloseTimeout = null;
+		  }
+		  
+		if (options.glow) {
+			fullscreen.classList.add('auto-glow');
+			
+			    // Set timeout to close after 1 minute
+			autoCloseTimeout = setTimeout(() => {
+			  fullscreen.style.display = 'none';
+			  fullscreen.classList.remove('auto-glow');
+			}, autoCloseDuration); 
+		} else {
+			fullscreen.classList.remove('auto-glow');
+		}
 
 	  const startDate = new Date(e.start);
 	  const endDate = new Date(e.end);
@@ -409,7 +486,11 @@
 	  // Content layout
 	  document.getElementById('fullscreen-content').innerHTML = `
 		  <div class="details-card">
-			<button class="close-btn" onclick="document.getElementById('fullscreen').style.display='none'">&times;</button>
+			<button class="close-btn" onclick="
+			  document.getElementById('fullscreen').style.display = 'none';
+			  document.getElementById('fullscreen').classList.remove('auto-glow');
+			  if (window.autoCloseTimeout) { clearTimeout(window.autoCloseTimeout); autoCloseTimeout = null; }
+			">&times;</button>
 			<div class="details-title">${e.summary}</div>
 			<div class="details-row details-date"><span class="details-label">Date:</span> ${dateString}</div>
 			<div class="details-row"><span class="details-label">Time:</span> ${startTime} &ndash; ${endTime}</div>
@@ -427,7 +508,8 @@
 		  </div>
 		`;
 
-	  document.getElementById('fullscreen').style.display = 'block';
+	  //document.getElementById('fullscreen').style.display = 'block';
+	  fullscreen.style.display = 'block';
 	}
 
 
