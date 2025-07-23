@@ -20,6 +20,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- DSEG font for 7-segment digital display -->
+  <link href="https://cdn.jsdelivr.net/npm/dseg-fonts@2.0.0/dseg.css" rel="stylesheet">
+
   <title>Upcoming Events</title>
   <style>
     body {
@@ -254,25 +257,40 @@
   }
 }
 
+
+#current-time {
+  font-family: 'DSEG7Classic-Regular', monospace;
+  font-size: 4.5em;
+  color: #33f3ff;
+  text-align: center;
+  letter-spacing: 0.12em;
+  text-shadow:
+    0 0 2px #0ff,
+    0 0 4px #0ff;
+}
+
+
+
   </style>
 </head>
 <body>
-  <h1 id="current-time">Loading time...</h1>
+  <div id="current-time">Loading time...</div>
+
   <div id="events"></div>
   <div id="fullscreen">
 	  <div class="content" id="fullscreen-content"></div>
 	</div>
 
   <script>
-    const fileName = "calendar.csv";
     const urlParams = new URLSearchParams(window.location.search);
+	const fileName = urlParams.get('file') || "calendar.csv";
     const countParam = urlParams.get('count') || 3;
     const nowParam = urlParams.get('now');
 	const privateOverride = urlParams.get('private') === '1';
 	const transparentBg = urlParams.get('trans') === '1';
 	const shownEventDetails = new Set();
 	let autoCloseTimeout = null;
-	const autoCloseDuration = 30000;
+	const autoCloseDuration = 10000;
 
 	if (transparentBg) {
 	  const style = document.createElement('style');
@@ -308,10 +326,11 @@
 		el.classList.remove('happening-now', 'final-countdown', 'starting-soon');
 		// Add correct class for current time
 		if ((start <= now) && (end > now)) {
-	
 		  el.classList.add('happening-now');
 		  const eventId = el.dataset.id;
-		  if (!shownEventDetails.has(eventId)) {
+		  const msSinceStart = now - start;
+		  
+		  if (msSinceStart <= autoCloseDuration && !shownEventDetails.has(eventId)) {
 			shownEventDetails.add(eventId);
 			showDetailsById(eventId, { glow: true });
 		  }
@@ -363,7 +382,7 @@
       } else if (countParam === 'tomorrow') {
         const tomorrow = new Date(now);
         tomorrow.setDate(now.getDate() + 1);
-        filtered = filtered.filter(e => isSameDay(new Date(e.start), tomorrow));
+        filtered = filtered.filter(e => isSameDay(new Date(e.start), tomorrow) || isSameDay(new Date(e.start), now));
       } else if (countParam === 'this_week') {
         const endOfWeek = new Date(now);
         endOfWeek.setDate(now.getDate() + (7 - now.getDay()));
@@ -659,7 +678,7 @@
 
     function fetchAndReloadData() {
 	  console.log('Reloading event data (fetchAndReloadData) at', new Date().toLocaleTimeString());
-      fetch(fileName)
+      fetch(`${fileName}?_=${Date.now()}`)
         .then(r => r.text())
         .then(data => {
           if (fileName.endsWith(".csv")) {
