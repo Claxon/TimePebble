@@ -572,22 +572,6 @@ input:checked + .slider:before {
     pointer-events: none;
     box-shadow: 0 0 10px #ff5722;
 }
-.event-drop-zone {
-    display: none;
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 150, 255, 0.5);
-    border: 2px dashed white;
-    border-radius: 12px;
-    pointer-events: none;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2em;
-    font-weight: bold;
-}
-.event.drag-over .event-drop-zone {
-    display: flex;
-}
 
 .modal-card input[type="text"], 
 .modal-card input[type="datetime-local"], 
@@ -661,6 +645,14 @@ input:checked + .slider:before {
     max-width: 90vw;
     max-height: 90vh;
     object-fit: contain;
+}
+.quick-edit-section {
+    border-top: 1px solid #444;
+    margin-top: 1.5em;
+    padding-top: 1em;
+}
+.quick-edit-section .color-picker-wrapper {
+    justify-content: space-evenly;
 }
 
 
@@ -796,7 +788,7 @@ input:checked + .slider:before {
     const urlParams = new URLSearchParams(window.location.search);
 	
 	const defaults = {
-		file: 'calendar.csv',
+		file: 'sample_events.csv',
 		count: 'tomorrow',
 		private: false,
 		trans: false,
@@ -1351,17 +1343,20 @@ input:checked + .slider:before {
 			${timeDisplay}
 		  </span>
 		  <div class="${timeClass}">${formatDuration(msUntil)}</div>
-          <div class="event-drop-zone">Drop Images</div>
 		`;
       
-      if (e.isCustom || customEvents.find(ce => generateId(ce) === id)) {
-        const customEventData = customEvents.find(ce => generateId(ce) === id) || e;
+      const customEventData = customEvents.find(ce => generateId(ce) === id);
+      if (e.isCustom || customEventData) {
+        const displayData = customEventData || e;
         cssClass += ' custom-colored';
-        if (customEventData.bgColor) el.style.backgroundColor = customEventData.bgColor;
-        if (customEventData.textColor) {
-            el.style.color = customEventData.textColor;
-            el.querySelector('.event-duration').style.color = customEventData.textColor;
-            el.querySelector('.event-duration').style.opacity = '0.7';
+        if (displayData.bgColor) el.style.backgroundColor = displayData.bgColor;
+        if (displayData.textColor) {
+            el.style.color = displayData.textColor;
+            const durationEl = el.querySelector('.event-duration');
+            if (durationEl) {
+                durationEl.style.color = displayData.textColor;
+                durationEl.style.opacity = '0.7';
+            }
         }
       }
       el.className = cssClass + ' slide-in';
@@ -1370,66 +1365,6 @@ input:checked + .slider:before {
       el.dataset.end = e.end;
       el.dataset.msUntil = msUntil;
       el.onclick = () => showDetailsById(id);
-
-      // Direct drag-and-drop onto events
-      el.addEventListener('dragover', (evt) => {
-          evt.preventDefault();
-          evt.stopPropagation();
-          el.classList.add('drag-over');
-      });
-      el.addEventListener('dragleave', (evt) => {
-          evt.preventDefault();
-          evt.stopPropagation();
-          el.classList.remove('drag-over');
-      });
-      el.addEventListener('drop', (evt) => {
-          evt.preventDefault();
-          evt.stopPropagation();
-          el.classList.remove('drag-over');
-          
-          const eventId = el.dataset.id;
-          let eventToUpdate = customEvents.find(ev => generateId(ev) === eventId);
-          let isNewOverride = false;
-
-          if (!eventToUpdate) {
-              const originalEvent = eventsData.find(ev => generateId(ev) === eventId);
-              if (!originalEvent) return;
-              eventToUpdate = { ...originalEvent, isCustom: true };
-              isNewOverride = true;
-          }
-
-          const files = evt.dataTransfer.files;
-          const imageFiles = [...files].filter(f => f.type.startsWith('image/'));
-          if (imageFiles.length === 0) return;
-
-          let imagesProcessed = 0;
-          const newImageUrls = [];
-
-          imageFiles.forEach(file => {
-              const reader = new FileReader();
-              reader.onload = (readEvent) => {
-                  newImageUrls.push(readEvent.target.result);
-                  imagesProcessed++;
-                  if (imagesProcessed === imageFiles.length) {
-                      let descObj = {};
-                      try { descObj = JSON.parse(eventToUpdate.description || '{}'); } 
-                      catch (err) { descObj = { text: eventToUpdate.description || '' }; }
-                      
-                      descObj.images = [...(descObj.images || []), ...newImageUrls];
-                      eventToUpdate.description = JSON.stringify(descObj);
-
-                      if (isNewOverride) {
-                          customEvents.push(eventToUpdate);
-                      }
-                      
-                      localStorage.setItem('customEvents', JSON.stringify(customEvents));
-                      renderEvents(fakeNow || new Date());
-                  }
-              };
-              reader.readAsDataURL(file);
-          });
-      });
-
 
 		let inserted = false;
 		for (let child of eventsDiv.children) {
@@ -1498,7 +1433,11 @@ input:checked + .slider:before {
         try {
             const descObj = JSON.parse(data.description);
             if (descObj.images) imageUrls = [...descObj.images];
-            if (descObj.hasOwnProperty('text')) descriptionText = descObj.text;
+            if (descObj.hasOwnProperty('text')) {
+                descriptionText = descObj.text;
+            } else if (descObj.images) {
+                descriptionText = ''; // Clear if it was just an image object
+            }
         } catch(e) {
             // Not a JSON description, treat as plain text
         }
