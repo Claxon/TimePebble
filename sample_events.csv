@@ -1,8 +1,4 @@
-subject,start,end,description,rsvp,private,ooo
-Project Phoenix Daily Standup,2025-07-28 090000,2025-07-28 091500,Daily sync-up for the project team.,accepted,no,no
-Design Review New Dashboard,2025-07-28 110000,2025-07-28 123000,Reviewing the latest mockups for the user dashboard.,accepted,no,no
-Lunch with Marketing Team,2025-07-28 130000,2025-07-28 140000,Lunch meeting to discuss Q3 strategy.,tentative,no,no
-Private Appointment,2025-07-28 150000,2025-07-28 153000,Details hidden,accepted,yes,no
-Focus Time,2025-07-28 160000,2025-07-28 170000,Blocked out for development work.,none,no,yes
-Team Dinner,2025-07-29 190000,2025-07-29 210000,End of sprint celebration.,accepted,no,no
-Q3 Planning Session,2025-07-30 100000,2025-07-30 130000,Full-day planning session for the next quarter.,organizer,no,no
+"subject","start","end","description","rsvp","private","ooo"
+"Sock Puppet Convention [All Day]","2026-07-28 00:00:00","2026-07-29 00:00:00","How to be a sock puppet and be successful...","none","no","no"
+"Dental Appointment","2028-07-28 10:00:00","2028-07-28 10:30:00","Don't forget to floss!","accepted","no","no"
+"Phone Parents","2028-07-28 20:15:00","2028-07-28 21:30:00","Dont' forget to ask about Dad's model boat.","accepted","no","no"
