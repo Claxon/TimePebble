@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>QUnit Tests</title>
+  <link rel="stylesheet" href="https://code.jquery.com/qunit/qunit-2.20.0.css">
+</head>
+<body>
+  <div id="qunit"></div>
+  <div id="qunit-fixture">
+    <!-- Fixture for DOM elements needed in tests -->
+    <div id="current-time"></div>
+    <div id="all-day-container"></div>
+    <div id="events"></div>
+  </div>
+
+  <!-- Source files -->
+  <script src="utils.js"></script>
+  <script src="config.js"></script>
+  <!-- Mock UI functions to avoid errors -->
+  <script>
+    function setupSettingsModal() {}
+    function setupAddEventModal() {}
+    function setupDragAndDrop() {}
+    function setupClipboardPaste() {}
+    function showDetailsById() {}
+  </script>
+  <script src="app.js"></script>
+  
+  <!-- Testing framework and tests -->
+  <script src="https://code.jquery.com/qunit/qunit-2.20.0.js"></script>
+  
+  
+	<script>
+	  QUnit.testDone(function( details ) {
+		// Check if any assertions failed during the test
+		if (details.failed > 0) {
+		  const fixture = document.getElementById('qunit-fixture').innerHTML;
+		  
+		  // Create a new container to display the failed state
+		  const failedState = document.createElement('div');
+		  failedState.style.border = '2px solid red';
+		  failedState.style.padding = '10px';
+		  failedState.style.marginTop = '20px';
+		  
+		  // Add a title and the captured HTML
+		  failedState.innerHTML = `
+			<h3>Failed Test State: ${details.module} - ${details.name}</h3>
+			<p>(${details.failed} of ${details.total} assertions failed)</p>
+			<div style="background-color: #333; padding: 10px; border-radius: 5px;">
+			  ${fixture}
+			</div>
+		  `;
+		  
+		  // Append it to the body so you can see it
+		  document.body.appendChild(failedState);
+		}
+	  });
+	</script>
+
+	<script src="tests.js"></script>
+</body>
+</html>
