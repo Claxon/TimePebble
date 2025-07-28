@@ -3,9 +3,10 @@
   === URL Parameters ===
   You can modify the page behavior using query parameters:
 
-    ?count=3         → Show only the next 3 upcoming events (default if not specified)
+    
+	?count=tomorrow  → Show events until end of tomorrow (default if not specified)
     ?count=today     → Show only events happening today
-    ?count=tomorrow  → Show only events happening tomorrow
+    ?count=3         → Show only the next 3 upcoming events 
     ?count=this_week → Show events for the current week
     ?count=all       → Show all future events
 
@@ -284,7 +285,7 @@
   <script>
     const urlParams = new URLSearchParams(window.location.search);
 	const fileName = urlParams.get('file') || "calendar.csv";
-    const countParam = urlParams.get('count') || 3;
+    const countParam = urlParams.get('count') || 'tomorrow';
     const nowParam = urlParams.get('now');
 	const privateOverride = urlParams.get('private') === '1';
 	const transparentBg = urlParams.get('trans') === '1';
