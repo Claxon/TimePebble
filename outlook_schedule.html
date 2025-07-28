@@ -126,6 +126,7 @@
 	  margin: 2em auto 0 auto;
 	  font-size: 1.08em;
 	  border: 1.5px solid #4fc3f7;
+    position: relative;
 	}
 
 	.details-title {
@@ -270,25 +271,365 @@
     0 0 4px #0ff;
 }
 
+/* --- All Day Events Styles --- */
+#all-day-container {
+    text-align: center;
+    margin-bottom: 1.5em;
+    padding: 1em 0;
+    border-bottom: 1px solid #444;
+}
+.all-day-event {
+    display: inline-block;
+    background: #2a3b4d;
+    color: #cdefff;
+    padding: 0.4em 1em;
+    border-radius: 16px;
+    margin: 0 0.5em 0.5em 0;
+    border: 1px solid #4fc3f7;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.all-day-event:hover {
+    background-color: #4fc3f7;
+    color: black;
+}
+.all-day-title {
+    font-size: 1.2em;
+    color: #4fc3f7;
+    margin-bottom: 0.75em;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+/* --- NEW: Two-Column Layout Styles --- */
+#main-content-wrapper {
+    display: block; /* Default layout */
+}
+body.layout-split-column #main-content-wrapper {
+    display: flex;
+    gap: 2em;
+    align-items: flex-start;
+}
+body.layout-split-column #all-day-container {
+    flex: 1;
+    max-width: 350px;
+    border-bottom: none;
+    padding: 0;
+    margin-bottom: 0;
+    text-align: left;
+}
+body.layout-split-column #events {
+    flex: 2;
+}
+body.layout-split-column .all-day-event {
+    display: block; /* Stack vertically in column */
+    margin-bottom: 0.75em;
+}
+
+
+/* --- Settings Button and Modal Styles --- */
+#settings-btn {
+  position: fixed;
+  top: 1.5em;
+  left: 1.5em;
+  width: 3em;
+  height: 3em;
+  background: #223344;
+  color: #aeefff;
+  border: 1.5px solid #4fc3f7;
+  border-radius: 50%;
+  font-size: 1.5em;
+  cursor: pointer;
+  z-index: 2000;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#settings-btn:hover {
+  background: #4fc3f7;
+  color: black;
+  transform: rotate(45deg);
+}
+#settings-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 3000;
+  padding: 2em;
+  align-items: center;
+  justify-content: center;
+}
+.settings-panel {
+  background: #16181e;
+  border-radius: 16px;
+  padding: 2em;
+  color: #fff;
+  max-width: 500px;
+  width: 100%;
+  border: 1.5px solid #4fc3f7;
+  position: relative;
+}
+.settings-panel h2 {
+  text-align: center;
+  font-size: 1.7em;
+  color: #4fc3f7;
+  margin-top: 0;
+}
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5em;
+  font-size: 1.1em;
+}
+.setting-row label {
+  color: #aeefff;
+  font-weight: 500;
+}
+.setting-row input[type="text"] {
+  background: #0c1820;
+  color: white;
+  border: 1px solid #4fc3f7;
+  border-radius: 6px;
+  padding: 0.5em;
+  min-width: 200px;
+}
+#save-settings-btn {
+  display: block;
+  width: 100%;
+  padding: 0.8em;
+  background: #4fc3f7;
+  color: black;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.2em;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 1em;
+}
+
+/* Styles for radio buttons */
+.count-options-fieldset {
+    border: 1px solid #4fc3f7;
+    border-radius: 8px;
+    padding: 1em;
+    margin-bottom: 1.5em;
+}
+.count-options-fieldset legend {
+    color: #aeefff;
+    font-weight: 500;
+    padding: 0 0.5em;
+}
+.radio-option {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75em;
+}
+.radio-option label {
+    margin-left: 0.5em;
+    flex-grow: 1;
+}
+#custom-count-input {
+    width: 60px;
+    margin-left: 0.5em;
+    background: #0c1820;
+    color: white;
+    border: 1px solid #4fc3f7;
+    border-radius: 4px;
+    padding: 0.2em 0.5em;
+}
+#custom-count-input:disabled {
+    background: #333;
+    border-color: #555;
+    cursor: not-allowed;
+}
+
+/* --- Slider Toggle Styles --- */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+}
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #333;
+  transition: .4s;
+  border-radius: 28px;
+  border: 1px solid #4fc3f7;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #aeefff;
+  transition: .4s;
+  border-radius: 50%;
+}
+input:checked + .slider {
+  background-color: #4fc3f7;
+}
+input:checked + .slider:before {
+  transform: translateX(22px);
+  background-color: #0c1820;
+}
+
+/* --- Hide/Unhide Event Button Styles --- */
+.details-action-btn {
+    padding: 0.5em 1em;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 1em;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid;
+}
+#hide-event-btn {
+    background: #5a3a00;
+    color: #ffcc80;
+    border-color: #ffcc80;
+}
+#hide-event-btn:hover {
+    background: #ffcc80;
+    color: #5a3a00;
+}
+#unhide-event-btn {
+    background: #004d40;
+    color: #80cbc4;
+    border-color: #80cbc4;
+}
+#unhide-event-btn:hover {
+    background: #80cbc4;
+    color: #004d40;
+}
 
 
   </style>
 </head>
 <body>
+  <button id="settings-btn" title="Settings">⚙️</button>
   <div id="current-time">Loading time...</div>
+  
+  <div id="main-content-wrapper">
+    <div id="all-day-container"></div>
+    <div id="events"></div>
+  </div>
 
-  <div id="events"></div>
   <div id="fullscreen">
 	  <div class="content" id="fullscreen-content"></div>
 	</div>
 
+  <!-- Settings Modal -->
+  <div id="settings-modal">
+    <div class="settings-panel">
+      <button class="close-btn" id="settings-close-btn">&times;</button>
+      <h2>Settings</h2>
+
+      <!-- "Show Events" Radio Buttons -->
+      <fieldset class="count-options-fieldset">
+        <legend>Show Events</legend>
+        <div class="radio-option">
+            <input type="radio" id="count-tomorrow" name="count-type" value="tomorrow">
+            <label for="count-tomorrow">Today & Tomorrow</label>
+        </div>
+        <div class="radio-option">
+            <input type="radio" id="count-today" name="count-type" value="today">
+            <label for="count-today">Today Only</label>
+        </div>
+        <div class="radio-option">
+            <input type="radio" id="count-this_week" name="count-type" value="this_week">
+            <label for="count-this_week">This Week</label>
+        </div>
+        <div class="radio-option">
+            <input type="radio" id="count-all" name="count-type" value="all">
+            <label for="count-all">All Future Events</label>
+        </div>
+        <div class="radio-option">
+            <input type="radio" id="count-custom" name="count-type" value="custom">
+            <label for="count-custom">Next</label>
+            <input type="number" id="custom-count-input" min="1" value="3" disabled>
+            <span>&nbsp;events</span>
+        </div>
+      </fieldset>
+
+      <div class="setting-row">
+        <label for="layout-setting">Split Column Layout</label>
+        <label class="switch">
+            <input type="checkbox" id="layout-setting">
+            <span class="slider"></span>
+        </label>
+      </div>
+      <!-- div class="setting-row">
+        <label for="private-setting">Show Private Details</label>
+        <label class="switch">
+            <input type="checkbox" id="private-setting">
+            <span class="slider"></span>
+        </label>
+      </div -->
+      <div class="setting-row">
+        <label for="trans-setting">Transparent BG</label>
+        <label class="switch">
+            <input type="checkbox" id="trans-setting">
+            <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <label for="show-hidden-setting">Show Hidden Events</label>
+        <label class="switch">
+            <input type="checkbox" id="show-hidden-setting">
+            <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <label for="file-setting">Data File Name</label>
+        <input type="text" id="file-setting">
+      </div>
+      <button id="save-settings-btn">Save & Reload</button>
+    </div>
+  </div>
+
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-	const fileName = urlParams.get('file') || "calendar.csv";
-    const countParam = urlParams.get('count') || 'tomorrow';
+	
+	const defaults = {
+		file: 'calendar.csv',
+		count: 'tomorrow',
+		private: false,
+		trans: false,
+        showHidden: false,
+        layout: 'top' // 'top' or 'split'
+	};
+	let settings = { ...defaults, ...JSON.parse(localStorage.getItem('eventSettings')) };
+    let hiddenEvents = new Set(JSON.parse(localStorage.getItem('hiddenEvents')) || []);
+
+	// URL parameters have priority over saved settings
+	const fileName = urlParams.get('file') || settings.file;
+	const countParam = urlParams.get('count') || settings.count;
+	const privateOverride = urlParams.has('private') ? urlParams.get('private') === '1' : settings.private;
+	const transparentBg = urlParams.has('trans') ? urlParams.get('trans') === '1' : settings.trans;
+    const showHiddenOverride = urlParams.has('showHidden') ? urlParams.get('showHidden') === '1' : settings.showHidden;
+    const layoutOverride = urlParams.get('layout') || settings.layout;
+
+
     const nowParam = urlParams.get('now');
-	const privateOverride = urlParams.get('private') === '1';
-	const transparentBg = urlParams.get('trans') === '1';
 	const shownEventDetails = new Set();
 	let autoCloseTimeout = null;
 	const autoCloseDuration = 10000;
@@ -304,10 +645,105 @@
 	  `;
 	  document.head.appendChild(style);
 	}
+    if (layoutOverride === 'split') {
+        document.body.classList.add('layout-split-column');
+    }
 
 	
     let fakeNow = nowParam ? new Date(nowParam) : null;
     let eventsData = [];
+
+	// --- Settings Management Functions ---
+	function updateSettingsForm() {
+        document.getElementById('file-setting').value = fileName;
+        document.getElementById('private-setting').checked = privateOverride;
+        document.getElementById('trans-setting').checked = transparentBg;
+        document.getElementById('show-hidden-setting').checked = showHiddenOverride;
+        document.getElementById('layout-setting').checked = layoutOverride === 'split';
+
+        // Handle radio buttons for 'count'
+        const customCountInput = document.getElementById('custom-count-input');
+        if (/^\d+$/.test(countParam)) {
+            document.getElementById('count-custom').checked = true;
+            customCountInput.value = countParam;
+            customCountInput.disabled = false;
+        } else {
+            const radio = document.getElementById(`count-${countParam}`);
+            if (radio) radio.checked = true;
+            else document.getElementById('count-tomorrow').checked = true; // Default
+            customCountInput.disabled = true;
+        }
+	}
+
+	function saveSettings() {
+        let countValue;
+        if (document.getElementById('count-custom').checked) {
+            countValue = document.getElementById('custom-count-input').value || '3';
+        } else {
+            countValue = document.querySelector('input[name="count-type"]:checked').value;
+        }
+
+		const newSettings = {
+			file: document.getElementById('file-setting').value,
+			count: countValue,
+			private: document.getElementById('private-setting').checked,
+			trans: document.getElementById('trans-setting').checked,
+            showHidden: document.getElementById('show-hidden-setting').checked,
+            layout: document.getElementById('layout-setting').checked ? 'split' : 'top'
+		};
+		localStorage.setItem('eventSettings', JSON.stringify(newSettings));
+		alert('Settings saved. The page will now reload to apply them.');
+		// Reload the page at its base path, clearing any URL params
+		window.location.href = window.location.pathname;
+	}
+	
+	function setupSettingsModal() {
+		const settingsBtn = document.getElementById('settings-btn');
+		const settingsModal = document.getElementById('settings-modal');
+		const closeBtn = document.getElementById('settings-close-btn');
+		const saveBtn = document.getElementById('save-settings-btn');
+        const countRadios = document.querySelectorAll('input[name="count-type"]');
+        const customCountInput = document.getElementById('custom-count-input');
+		
+		settingsBtn.onclick = () => {
+			updateSettingsForm(); // Ensure form shows current settings
+			settingsModal.style.display = 'flex'; // Use flex to center the panel
+		};
+		closeBtn.onclick = () => settingsModal.style.display = 'none';
+		saveBtn.onclick = saveSettings;
+		// Close if user clicks outside the panel
+		settingsModal.onclick = (e) => {
+			if (e.target === settingsModal) {
+				settingsModal.style.display = 'none';
+			}
+		};
+
+        // Enable/disable custom count input
+        countRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                customCountInput.disabled = (radio.value !== 'custom');
+            });
+        });
+	}
+
+    function cleanupHiddenEvents() {
+        const now = fakeNow ? new Date(fakeNow.getTime()) : new Date();
+        let changed = false;
+        const allEventIds = new Set(eventsData.map(generateId));
+        
+        hiddenEvents.forEach(id => {
+            const event = eventsData.find(e => generateId(e) === id);
+            // Remove if event is over OR if it's no longer in the main data source
+            if (!event || new Date(event.end) < now) {
+                hiddenEvents.delete(id);
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            localStorage.setItem('hiddenEvents', JSON.stringify(Array.from(hiddenEvents)));
+        }
+    }
 
     function updateTime() {
 	  const now = fakeNow ? new Date(fakeNow.getTime()) : new Date();
@@ -322,10 +758,8 @@
 		const msUntilEnd = end - now;
 		const timeDiv = el.querySelector('.time-until, .big-time');
 
-		// --- NEW LOGIC TO UPDATE COLOURS/CLASSES DYNAMICALLY ---
-		// Remove all possible state classes
+		// --- LOGIC TO UPDATE COLOURS/CLASSES DYNAMICALLY ---
 		el.classList.remove('happening-now', 'final-countdown', 'starting-soon');
-		// Add correct class for current time
 		if ((start <= now) && (end > now)) {
 		  el.classList.add('happening-now');
 		  const eventId = el.dataset.id;
@@ -341,7 +775,6 @@
 		} else if (msUntil > 2 * 60 * 1000 && msUntil < 10 * 60 * 1000) {
 		  el.classList.add('starting-soon');
 		}
-		// --------------------------------------------------------
 
 		if (end <= now && !el.classList.contains('slide-out')) {
 		  el.classList.remove('slide-in', 'slide-in-active');
@@ -370,11 +803,58 @@
       return `${e.start}_${e.summary}`;
     }
 
+    function isAllDayEvent(e) {
+        const start = new Date(e.start);
+        const end = new Date(e.end);
+        const durationHours = (end - start) / (1000 * 60 * 60);
+        const startsAtMidnight = start.getHours() === 0 && start.getMinutes() === 0 && start.getSeconds() === 0;
+        // Use >= 23 hours to account for daylight saving changes
+        return durationHours >= 23 && startsAtMidnight;
+    }
+
+    function renderTodaysAllDayEvents(events, now) {
+        const container = document.getElementById('all-day-container');
+        container.innerHTML = ''; // Clear previous content
+
+        if (events.length > 0) {
+            const title = document.createElement('div');
+            title.className = 'all-day-title';
+            title.textContent = "Today's All-Day Events";
+            container.appendChild(title);
+
+            events.forEach(e => {
+                const el = document.createElement('div');
+                el.className = 'all-day-event';
+                el.textContent = e.summary;
+                el.onclick = () => showDetailsById(generateId(e));
+                container.appendChild(el);
+            });
+        }
+    }
+
     function renderEvents(now) {
-	 console.log('Checking/updating ticket state (renderEvents) at', now.toLocaleTimeString());
-      let filtered = eventsData
-        .filter(e => e.rsvp !== 'declined' && new Date(e.end) >= now && e.ooo !== 'yes')
-        .sort((a, b) => new Date(a.start) - new Date(b.start));
+      cleanupHiddenEvents();
+	  
+      const visibleEvents = eventsData.filter(e => {
+        const id = generateId(e);
+        const isHidden = hiddenEvents.has(id) && !showHiddenOverride;
+        return !isHidden && e.rsvp !== 'declined' && new Date(e.end) >= now && e.ooo !== 'yes';
+      });
+
+      const todaysAllDayEvents = [];
+      const otherEvents = [];
+
+      visibleEvents.forEach(e => {
+          if (isAllDayEvent(e) && isSameDay(new Date(e.start), now)) {
+              todaysAllDayEvents.push(e);
+          } else {
+              otherEvents.push(e);
+          }
+      });
+
+      renderTodaysAllDayEvents(todaysAllDayEvents, now);
+
+      let filtered = otherEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
 
       if (/^\d+$/.test(countParam)) {
         filtered = filtered.slice(0, parseInt(countParam));
@@ -390,7 +870,7 @@
         endOfWeek.setHours(23, 59, 59, 999);
         filtered = filtered.filter(e => new Date(e.start) <= endOfWeek);
       } else if (countParam !== 'all') {
-        filtered = filtered.slice(0, 3);
+        // This is a fallback, 'all' will show all timedEvents
       }
 
       const eventsDiv = document.getElementById('events');
@@ -411,14 +891,12 @@
 		  el.classList.add('slide-out');
 
 		  const eventsDiv = document.getElementById('events');
-		  // Remove slide-in/out classes from ALL other events before FLIP
 		  Array.from(eventsDiv.children).forEach(child => {
 			if (child.classList && child.classList.contains('event') && child !== el) {
 			  child.classList.remove('slide-in', 'slide-in-active', 'slide-out');
 			}
 		  });
 
-		  // 1. Get pre-removal positions
 		  const prevRects = [];
 		  Array.from(eventsDiv.children).forEach(child => {
 			if (child !== el && child.classList.contains('event')) {
@@ -432,7 +910,6 @@
 		  setTimeout(() => {
 			el.remove();
 
-			// 2. Get new positions
 			const newRects = [];
 			Array.from(eventsDiv.children).forEach(child => {
 			  if (child.classList.contains('event')) {
@@ -443,7 +920,6 @@
 			  }
 			});
 
-			// 3. Calculate movement and animate
 			newRects.forEach((newRect, i) => {
 			  const prevRect = prevRects.find(r => r.el === newRect.el);
 			  if (prevRect) {
@@ -465,21 +941,18 @@
 	function showDetailsById(id, options = {}) {
 	  const e = eventsData.find(ev => generateId(ev) === id);
 	  if (!e) {
-		alert("Sorry, event not found.");
+		console.error("Sorry, event not found for ID:", id);
 		return;
 	  }
 
 		const fullscreen = document.getElementById('fullscreen');
-		// Cancel any previous auto-close
-		  if (autoCloseTimeout) {
+		if (autoCloseTimeout) {
 			clearTimeout(autoCloseTimeout);
 			autoCloseTimeout = null;
-		  }
+		}
 		  
-		if (options.glow) {
+		if (options.glow && !isAllDayEvent(e)) { // Don't auto-glow for all-day events
 			fullscreen.classList.add('auto-glow');
-			
-			    // Set timeout to close after 1 minute
 			autoCloseTimeout = setTimeout(() => {
 			  fullscreen.style.display = 'none';
 			  fullscreen.classList.remove('auto-glow');
@@ -490,20 +963,18 @@
 
 	  const startDate = new Date(e.start);
 	  const endDate = new Date(e.end);
-
-	  // Fancy time/date strings
 	  const dateString = startDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 	  const startTime = formatTimeOnly(startDate);
 	  const endTime = formatTimeOnly(endDate);
-
-	  // Duration
 	  const duration = formatDurationMinutes(startDate, endDate);
-
-	  // RSVP/Privacy
 	  const rsvp = e.rsvp.charAt(0).toUpperCase() + e.rsvp.slice(1);
 	  const privacy = e.private === 'yes' ? "Private" : "Public";
+      
+      const isHidden = hiddenEvents.has(id);
+      const buttonId = isHidden ? 'unhide-event-btn' : 'hide-event-btn';
+      const buttonText = isHidden ? 'Unhide this event' : 'Hide this event';
+      const toggleButtonHTML = `<button id="${buttonId}" class="details-action-btn" data-id="${id}">${buttonText}</button>`;
 
-	  // Content layout
 	  document.getElementById('fullscreen-content').innerHTML = `
 		  <div class="details-card">
 			<button class="close-btn" onclick="
@@ -513,7 +984,7 @@
 			">&times;</button>
 			<div class="details-title">${e.summary}</div>
 			<div class="details-row details-date"><span class="details-label">Date:</span> ${dateString}</div>
-			<div class="details-row"><span class="details-label">Time:</span> ${startTime} &ndash; ${endTime}</div>
+            ${!isAllDayEvent(e) ? `<div class="details-row"><span class="details-label">Time:</span> ${startTime} &ndash; ${endTime}</div>` : ''}
 			<div class="details-row"><span class="details-label">Duration:</span> ${duration}</div>
 			<div class="details-row"><span class="details-label">RSVP:</span> ${rsvp}</div>
 			<div class="details-row"><span class="details-label">Privacy:</span> ${privacy}</div>
@@ -525,10 +996,22 @@
 				   : '<i>Details hidden</i>'}
 			  </span>
 			</div>
+            ${toggleButtonHTML}
 		  </div>
 		`;
+      
+      document.querySelector('.details-action-btn').onclick = (evt) => {
+          const eventIdToToggle = evt.target.dataset.id;
+          if (hiddenEvents.has(eventIdToToggle)) {
+              hiddenEvents.delete(eventIdToToggle);
+          } else {
+              hiddenEvents.add(eventIdToToggle);
+          }
+          localStorage.setItem('hiddenEvents', JSON.stringify(Array.from(hiddenEvents)));
+          document.getElementById('fullscreen').style.display = 'none';
+          renderEvents(fakeNow || new Date());
+      };
 
-	  //document.getElementById('fullscreen').style.display = 'block';
 	  fullscreen.style.display = 'block';
 	}
 
@@ -554,18 +1037,15 @@
       const eventsDiv = document.getElementById('events');
 
       if (dateStr !== lastDateStr) {
-		  // Check if there's already a divider for this date just before the current event's place
 		  let needDivider = true;
 		  let insertBefore = null;
 
-		  // Find the correct insertion point for the event, and check if divider is present
 		  for (let child of eventsDiv.children) {
 			if (child.classList.contains('event')) {
 			  const childStart = new Date(child.dataset.start);
 			  const childDateStr = childStart.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
 			  if (dateStr === childDateStr) {
-				// Check if the previous sibling is already a divider for this date
 				if (child.previousElementSibling && child.previousElementSibling.classList.contains('date-divider') && child.previousElementSibling.textContent === dateStr) {
 				  needDivider = false;
 				} else {
@@ -607,7 +1087,6 @@
 		  <div class="${timeClass}">${formatDuration(msUntil)}</div>
 		`;
 
-		// Find correct place to insert based on start time
 		let inserted = false;
 		for (let child of eventsDiv.children) {
 		  if (child.classList.contains('event')) {
@@ -690,6 +1169,8 @@
         .catch(err => console.error("Failed to reload file:", err));
     }
 
+	// --- Initial Setup ---
+	setupSettingsModal();
     fetchAndReloadData();
 	setInterval(updateTime, 1000);
 
