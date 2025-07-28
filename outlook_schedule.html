@@ -36,13 +36,15 @@
       font-size: 2em;
       text-align: center;
     }
-	#fullscreen {
+	#fullscreen, #add-event-modal {
 	  display: none;
 	  position: fixed;
 	  inset: 0;
 	  background: rgba(0,0,0,0.95);
 	  z-index: 1000;
 	  padding: 3em 1em 1em 1em;
+      align-items: flex-start;
+      justify-content: center;
 	}
     .event {
       background-color: #222;
@@ -116,7 +118,7 @@
 	  transition: transform 0.5s cubic-bezier(.34,1.56,.64,1);
 	  z-index: 0;
 	}
-	.details-card {
+	.details-card, .modal-card {
 	  background: #16181e;
 	  border-radius: 16px;
 	  box-shadow: 0 4px 24px rgba(80,200,255,0.12);
@@ -129,7 +131,7 @@
     position: relative;
 	}
 
-	.details-title {
+	.details-title, .modal-title {
 	  font-size: 1.7em;
 	  color: #4fc3f7;
 	  font-weight: 600;
@@ -138,18 +140,20 @@
 	  letter-spacing: 0.01em;
 	}
 
-	.details-row {
+	.details-row, .modal-row {
 	  margin-bottom: 0.7em;
 	  display: flex;
+      flex-wrap: wrap;
 	  justify-content: flex-start;
 	  gap: 0.5em;
 	}
 
-	.details-label {
+	.details-label, .modal-label {
 	  color: #aeefff;
 	  min-width: 90px;
 	  font-weight: 500;
 	  display: inline-block;
+      padding-top: 0.5em;
 	}
 
 	.details-date {
@@ -195,10 +199,6 @@
 	  background: #223344;
 	  color: #fff;
 	}
-	.details-card {
-	  position: relative; /* Needed for the close button’s absolute positioning */
-	}
-
 
     .date-divider {
       border-top: 2px solid #4fc3f7;
@@ -302,7 +302,7 @@
     letter-spacing: 0.1em;
 }
 
-/* --- NEW: Two-Column Layout Styles --- */
+/* --- Two-Column Layout Styles --- */
 #main-content-wrapper {
     display: block; /* Default layout */
 }
@@ -328,11 +328,10 @@ body.layout-split-column .all-day-event {
 }
 
 
-/* --- Settings Button and Modal Styles --- */
-#settings-btn {
+/* --- Settings & Add Button Styles --- */
+.action-btn {
   position: fixed;
   top: 1.5em;
-  left: 1.5em;
   width: 3em;
   height: 3em;
   background: #223344;
@@ -347,7 +346,13 @@ body.layout-split-column .all-day-event {
   align-items: center;
   justify-content: center;
 }
-#settings-btn:hover {
+#settings-btn {
+  left: 1.5em;
+}
+#add-event-btn {
+  right: 1.5em;
+}
+.action-btn:hover {
   background: #4fc3f7;
   color: black;
   transform: rotate(45deg);
@@ -397,7 +402,7 @@ body.layout-split-column .all-day-event {
   padding: 0.5em;
   min-width: 200px;
 }
-#save-settings-btn {
+#save-settings-btn, #save-event-btn {
   display: block;
   width: 100%;
   padding: 0.8em;
@@ -521,21 +526,70 @@ input:checked + .slider:before {
     color: #004d40;
 }
 
+/* --- NEW: Drag and Drop Marker --- */
+#drop-marker {
+    display: none;
+    position: absolute;
+    width: 100%;
+    height: 4px;
+    background-color: #ff5722;
+    z-index: 500;
+    pointer-events: none;
+    box-shadow: 0 0 10px #ff5722;
+}
+
+.modal-card input[type="text"], .modal-card input[type="datetime-local"], .modal-card textarea {
+    background: #0c1820;
+    color: white;
+    border: 1px solid #4fc3f7;
+    border-radius: 6px;
+    padding: 0.5em;
+    width: 100%;
+    box-sizing: border-box;
+}
 
   </style>
 </head>
 <body>
-  <button id="settings-btn" title="Settings">⚙️</button>
+  <button id="settings-btn" class="action-btn" title="Settings">⚙️</button>
+  <button id="add-event-btn" class="action-btn" title="Add Event">+</button>
   <div id="current-time">Loading time...</div>
   
   <div id="main-content-wrapper">
     <div id="all-day-container"></div>
-    <div id="events"></div>
+    <div id="events">
+        <div id="drop-marker"></div>
+    </div>
   </div>
 
   <div id="fullscreen">
 	  <div class="content" id="fullscreen-content"></div>
 	</div>
+
+  <!-- Add Event Modal -->
+  <div id="add-event-modal" style="display: none;">
+    <div class="modal-card">
+        <button class="close-btn" id="add-event-close-btn">&times;</button>
+        <h2 class="modal-title">Add New Event</h2>
+        <div class="modal-row">
+            <label for="event-summary" class="modal-label">Summary</label>
+            <input type="text" id="event-summary" placeholder="e.g., Team Meeting">
+        </div>
+        <div class="modal-row">
+            <label for="event-start" class="modal-label">Start Time</label>
+            <input type="datetime-local" id="event-start">
+        </div>
+        <div class="modal-row">
+            <label for="event-end" class="modal-label">End Time</label>
+            <input type="datetime-local" id="event-end">
+        </div>
+        <div class="modal-row">
+            <label for="event-description" class="modal-label">Description</label>
+            <textarea id="event-description" rows="3"></textarea>
+        </div>
+        <button id="save-event-btn">Save Event</button>
+    </div>
+  </div>
 
   <!-- Settings Modal -->
   <div id="settings-modal">
@@ -577,13 +631,13 @@ input:checked + .slider:before {
             <span class="slider"></span>
         </label>
       </div>
-      <!-- div class="setting-row">
+      <div class="setting-row">
         <label for="private-setting">Show Private Details</label>
         <label class="switch">
             <input type="checkbox" id="private-setting">
             <span class="slider"></span>
         </label>
-      </div -->
+      </div>
       <div class="setting-row">
         <label for="trans-setting">Transparent BG</label>
         <label class="switch">
@@ -619,6 +673,7 @@ input:checked + .slider:before {
 	};
 	let settings = { ...defaults, ...JSON.parse(localStorage.getItem('eventSettings')) };
     let hiddenEvents = new Set(JSON.parse(localStorage.getItem('hiddenEvents')) || []);
+    let customEvents = JSON.parse(localStorage.getItem('customEvents')) || [];
 
 	// URL parameters have priority over saved settings
 	const fileName = urlParams.get('file') || settings.file;
@@ -638,8 +693,8 @@ input:checked + .slider:before {
 	  const style = document.createElement('style');
 	  style.textContent = `
 		body { background: transparent !important; }
-		#fullscreen { background: transparent !important; }
-		.details-card, .event {
+		#fullscreen, #add-event-modal { background: transparent !important; }
+		.details-card, .event, .modal-card {
 		  background: rgba(30,40,60,0.8) !important;
 		}
 	  `;
@@ -835,7 +890,8 @@ input:checked + .slider:before {
     function renderEvents(now) {
       cleanupHiddenEvents();
 	  
-      const visibleEvents = eventsData.filter(e => {
+      const allKnownEvents = [...eventsData, ...customEvents];
+      const visibleEvents = allKnownEvents.filter(e => {
         const id = generateId(e);
         const isHidden = hiddenEvents.has(id) && !showHiddenOverride;
         return !isHidden && e.rsvp !== 'declined' && new Date(e.end) >= now && e.ooo !== 'yes';
@@ -939,7 +995,8 @@ input:checked + .slider:before {
 		}
 
 	function showDetailsById(id, options = {}) {
-	  const e = eventsData.find(ev => generateId(ev) === id);
+	  const allKnownEvents = [...eventsData, ...customEvents];
+	  const e = allKnownEvents.find(ev => generateId(ev) === id);
 	  if (!e) {
 		console.error("Sorry, event not found for ID:", id);
 		return;
@@ -967,7 +1024,7 @@ input:checked + .slider:before {
 	  const startTime = formatTimeOnly(startDate);
 	  const endTime = formatTimeOnly(endDate);
 	  const duration = formatDurationMinutes(startDate, endDate);
-	  const rsvp = e.rsvp.charAt(0).toUpperCase() + e.rsvp.slice(1);
+	  const rsvp = e.rsvp ? e.rsvp.charAt(0).toUpperCase() + e.rsvp.slice(1) : 'Accepted';
 	  const privacy = e.private === 'yes' ? "Private" : "Public";
       
       const isHidden = hiddenEvents.has(id);
@@ -1012,7 +1069,7 @@ input:checked + .slider:before {
           renderEvents(fakeNow || new Date());
       };
 
-	  fullscreen.style.display = 'block';
+	  fullscreen.style.display = 'flex';
 	}
 
 
@@ -1036,7 +1093,7 @@ input:checked + .slider:before {
 
       const eventsDiv = document.getElementById('events');
 
-      if (dateStr !== lastDateStr) {
+      if (dateStr !== lastDateStr && !isAllDayEvent(e)) {
 		  let needDivider = true;
 		  let insertBefore = null;
 
@@ -1078,11 +1135,16 @@ input:checked + .slider:before {
       el.dataset.end = e.end;
       el.dataset.msUntil = msUntil;
       el.onclick = () => showDetailsById(id);
+      
+      const timeDisplay = isAllDayEvent(e)
+        ? `<span>All Day</span>`
+        : `<span>${formatTimeOnly(start)}</span>
+           <span class="event-duration">(${formatDurationMinutes(start, end)})</span>`;
+
       el.innerHTML = `
 		  <strong>${e.summary}</strong><br/>
 		  <span class="event-time-row">
-			<span>${formatTimeOnly(start)}</span>
-			<span class="event-duration">(${formatDurationMinutes(start, end)})</span>
+			${timeDisplay}
 		  </span>
 		  <div class="${timeClass}">${formatDuration(msUntil)}</div>
 		`;
@@ -1127,7 +1189,128 @@ input:checked + .slider:before {
       return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
     }
 
-    
+    function toLocalISOString(date) {
+        const tzoffset = (new Date()).getTimezoneOffset() * 60000; //offset in milliseconds
+        const localISOTime = (new Date(date - tzoffset)).toISOString().slice(0, -1);
+        return localISOTime.substring(0, 16);
+    }
+
+    function setupAddEventModal() {
+        const addBtn = document.getElementById('add-event-btn');
+        const modal = document.getElementById('add-event-modal');
+        const closeBtn = document.getElementById('add-event-close-btn');
+        const saveBtn = document.getElementById('save-event-btn');
+
+        addBtn.onclick = () => {
+            // Reset form
+            document.getElementById('event-summary').value = '';
+            document.getElementById('event-description').value = '';
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + 30 - (now.getMinutes() % 30)); // Default to next half hour
+            document.getElementById('event-start').value = toLocalISOString(now);
+            now.setHours(now.getHours() + 1);
+            document.getElementById('event-end').value = toLocalISOString(now);
+            modal.style.display = 'flex';
+        };
+
+        closeBtn.onclick = () => modal.style.display = 'none';
+        saveBtn.onclick = () => {
+            const newEvent = {
+                summary: document.getElementById('event-summary').value || 'New Event',
+                start: new Date(document.getElementById('event-start').value).toISOString(),
+                end: new Date(document.getElementById('event-end').value).toISOString(),
+                description: document.getElementById('event-description').value,
+                isCustom: true
+            };
+            customEvents.push(newEvent);
+            localStorage.setItem('customEvents', JSON.stringify(customEvents));
+            modal.style.display = 'none';
+            renderEvents(fakeNow || new Date());
+        };
+    }
+
+    function setupDragAndDrop() {
+        const eventsContainer = document.getElementById('events');
+        const dropMarker = document.getElementById('drop-marker');
+        let lastY = 0;
+
+        eventsContainer.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            
+            let targetEl = e.target.closest('.event, .date-divider');
+            if (!targetEl) {
+                // If dragging over empty space at the bottom, find the last element
+                const children = Array.from(eventsContainer.children).filter(c => c.id !== 'drop-marker');
+                targetEl = children[children.length - 1];
+            }
+            if (!targetEl) return;
+
+            const rect = targetEl.getBoundingClientRect();
+            const isAfter = e.clientY > rect.top + rect.height / 2;
+            
+            dropMarker.style.display = 'block';
+            if (isAfter) {
+                dropMarker.style.top = `${targetEl.offsetTop + targetEl.offsetHeight}px`;
+            } else {
+                dropMarker.style.top = `${targetEl.offsetTop}px`;
+            }
+            lastY = e.clientY;
+        });
+
+        eventsContainer.addEventListener('dragleave', e => {
+            if (e.relatedTarget === null || !eventsContainer.contains(e.relatedTarget)) {
+                dropMarker.style.display = 'none';
+            }
+        });
+
+        eventsContainer.addEventListener('drop', e => {
+            e.preventDefault();
+            dropMarker.style.display = 'none';
+            const text = e.dataTransfer.getData('text/plain');
+            if (!text) return;
+
+            // Determine time based on drop position
+            const now = fakeNow || new Date();
+            const children = Array.from(eventsContainer.children).filter(c => c.classList.contains('event'));
+            let dropTime = new Date(now);
+            
+            let closestEl = null;
+            let minDistance = Infinity;
+
+            children.forEach(child => {
+                const rect = child.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                const distance = Math.abs(lastY - midY);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestEl = child;
+                }
+            });
+
+            if (closestEl) {
+                const rect = closestEl.getBoundingClientRect();
+                const isAfter = lastY > rect.top + rect.height / 2;
+                if (isAfter) {
+                    dropTime = new Date(new Date(closestEl.dataset.end).getTime() + 1000); // Drop after this event
+                } else {
+                    dropTime = new Date(new Date(closestEl.dataset.start).getTime() - 60 * 60 * 1000); // Drop an hour before
+                }
+            } else {
+                // Dropped in an empty list, default to now
+                dropTime.setMinutes(now.getMinutes() + 30 - (now.getMinutes() % 30));
+            }
+            
+            // Open the add modal with pre-filled info
+            const modal = document.getElementById('add-event-modal');
+            document.getElementById('event-summary').value = text;
+            document.getElementById('event-start').value = toLocalISOString(dropTime);
+            const endTime = new Date(dropTime.getTime() + 60 * 60 * 1000); // Default 1 hour duration
+            document.getElementById('event-end').value = toLocalISOString(endTime);
+            document.getElementById('event-description').value = '';
+            modal.style.display = 'flex';
+        });
+    }
 
     function parseCSV(data) {
       const lines = data.trim().split(/\r?\n/);
@@ -1171,6 +1354,8 @@ input:checked + .slider:before {
 
 	// --- Initial Setup ---
 	setupSettingsModal();
+    setupAddEventModal();
+    setupDragAndDrop();
     fetchAndReloadData();
 	setInterval(updateTime, 1000);
 
