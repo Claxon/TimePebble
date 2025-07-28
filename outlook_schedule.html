@@ -21,7 +21,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <!-- DSEG font for 7-segment digital display -->
   <link href="https://cdn.jsdelivr.net/npm/dseg-fonts@2.0.0/dseg.css" rel="stylesheet">
 
   <title>Upcoming Events</title>
@@ -36,15 +35,16 @@
       font-size: 2em;
       text-align: center;
     }
-	#fullscreen, #add-event-modal {
+	#fullscreen, #add-event-modal, #image-viewer-modal {
 	  display: none;
 	  position: fixed;
 	  inset: 0;
 	  background: rgba(0,0,0,0.95);
 	  z-index: 1000;
 	  padding: 3em 1em 1em 1em;
-      align-items: flex-start;
+      align-items: center;
       justify-content: center;
+      overflow-y: auto;
 	}
     .event {
       background-color: #222;
@@ -60,6 +60,9 @@
     .event strong {
       font-size: 1.2em;
       color: #4fc3f7;
+    }
+    .event.custom-colored strong {
+        color: inherit; /* Let the parent's color take over */
     }
     .time-until {
       position: absolute;
@@ -97,6 +100,9 @@
       animation: pulseBlue 2s infinite alternate ease-in-out;
       background-color: #99ccff;
       color: black;
+    }
+    .happening-now.custom-colored {
+        color: inherit; /* Let custom color override */
     }
     @keyframes pulseBlue {
       from { box-shadow: 0 0 10px #ffffff; background-color: #cceeff; }
@@ -169,6 +175,19 @@
 	  color: #dbefff;
 	  line-height: 1.5;
 	}
+    .details-image-gallery {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    .details-image-gallery img {
+        max-width: 80px;
+        max-height: 80px;
+        border-radius: 8px;
+        cursor: pointer;
+        border: 2px solid #4fc3f7;
+    }
 
 	.details-description .details-label {
 	  min-width: 0;
@@ -357,6 +376,9 @@ body.layout-split-column .all-day-event {
   color: black;
   transform: rotate(45deg);
 }
+body.modal-open .action-btn {
+    display: none;
+}
 #settings-modal {
   display: none;
   position: fixed;
@@ -495,38 +517,51 @@ input:checked + .slider:before {
   background-color: #0c1820;
 }
 
-/* --- Hide/Unhide Event Button Styles --- */
+/* --- Hide/Unhide/Edit Event Button Styles --- */
+.details-action-btn-group {
+    display: flex;
+    gap: 1em;
+    justify-content: center;
+    margin-top: 1.5em;
+}
 .details-action-btn {
     padding: 0.5em 1em;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
-    margin-top: 1em;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
     border: 1px solid;
 }
-#hide-event-btn {
+#hide-event-btn, #unhide-event-btn {
     background: #5a3a00;
     color: #ffcc80;
     border-color: #ffcc80;
 }
-#hide-event-btn:hover {
+#hide-event-btn:hover, #unhide-event-btn:hover {
     background: #ffcc80;
     color: #5a3a00;
 }
-#unhide-event-btn {
-    background: #004d40;
-    color: #80cbc4;
-    border-color: #80cbc4;
+#edit-event-btn {
+    background: #1a237e;
+    color: #9fa8da;
+    border-color: #9fa8da;
 }
-#unhide-event-btn:hover {
-    background: #80cbc4;
-    color: #004d40;
+#edit-event-btn:hover {
+    background: #9fa8da;
+    color: #1a237e;
+}
+#delete-event-btn {
+    background: #610404;
+    color: #ff9a9a;
+    border-color: #ff9a9a;
+}
+#delete-event-btn.confirm-delete {
+    background: #ff0000;
+    color: white;
+    border-color: white;
 }
 
-/* --- NEW: Drag and Drop Marker --- */
+
+/* --- Drag and Drop Marker --- */
 #drop-marker {
     display: none;
     position: absolute;
@@ -537,16 +572,97 @@ input:checked + .slider:before {
     pointer-events: none;
     box-shadow: 0 0 10px #ff5722;
 }
+.event-drop-zone {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 150, 255, 0.5);
+    border: 2px dashed white;
+    border-radius: 12px;
+    pointer-events: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+.event.drag-over .event-drop-zone {
+    display: flex;
+}
 
-.modal-card input[type="text"], .modal-card input[type="datetime-local"], .modal-card textarea {
+.modal-card input[type="text"], 
+.modal-card input[type="datetime-local"], 
+.modal-card input[type="color"], 
+.modal-card textarea {
     background: #0c1820;
     color: white;
     border: 1px solid #4fc3f7;
     border-radius: 6px;
     padding: 0.5em;
-    width: 100%;
     box-sizing: border-box;
 }
+.modal-card input[type="text"],
+.modal-card input[type="datetime-local"],
+.modal-card textarea {
+    width: 100%;
+}
+.modal-card .color-picker-wrapper {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+.modal-card input[type="color"] {
+    width: 50px;
+    height: 40px;
+    padding: 2px;
+}
+#image-drop-zone {
+    border: 2px dashed #4fc3f7;
+    border-radius: 8px;
+    padding: 1em;
+    text-align: center;
+    color: #aeefff;
+    margin-top: 1em;
+    transition: background-color 0.2s;
+}
+#image-drop-zone.drag-over {
+    background-color: #223344;
+}
+#image-preview-gallery {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    justify-content: center;
+}
+.thumbnail-container {
+    position: relative;
+}
+.thumbnail-container img {
+    max-width: 80px;
+    max-height: 80px;
+    border-radius: 8px;
+}
+.thumbnail-remove-btn {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: red;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: bold;
+}
+#image-viewer-modal img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+}
+
 
   </style>
 </head>
@@ -565,8 +681,12 @@ input:checked + .slider:before {
   <div id="fullscreen">
 	  <div class="content" id="fullscreen-content"></div>
 	</div>
+  
+  <div id="image-viewer-modal">
+      <button class="close-btn">&times;</button>
+      <img src="" alt="Full size event image">
+  </div>
 
-  <!-- Add Event Modal -->
   <div id="add-event-modal" style="display: none;">
     <div class="modal-card">
         <button class="close-btn" id="add-event-close-btn">&times;</button>
@@ -587,17 +707,29 @@ input:checked + .slider:before {
             <label for="event-description" class="modal-label">Description</label>
             <textarea id="event-description" rows="3"></textarea>
         </div>
+        <div id="image-drop-zone">
+            Drop images here or paste from clipboard
+            <div id="image-preview-gallery"></div>
+        </div>
+        <div class="modal-row color-picker-wrapper">
+            <div>
+                <label for="event-bg-color" class="modal-label">Background</label>
+                <input type="color" id="event-bg-color" value="#37474f">
+            </div>
+            <div>
+                <label for="event-text-color" class="modal-label">Text</label>
+                <input type="color" id="event-text-color" value="#eceff1">
+            </div>
+        </div>
         <button id="save-event-btn">Save Event</button>
     </div>
   </div>
 
-  <!-- Settings Modal -->
   <div id="settings-modal">
     <div class="settings-panel">
       <button class="close-btn" id="settings-close-btn">&times;</button>
       <h2>Settings</h2>
 
-      <!-- "Show Events" Radio Buttons -->
       <fieldset class="count-options-fieldset">
         <legend>Show Events</legend>
         <div class="radio-option">
@@ -674,6 +806,8 @@ input:checked + .slider:before {
 	let settings = { ...defaults, ...JSON.parse(localStorage.getItem('eventSettings')) };
     let hiddenEvents = new Set(JSON.parse(localStorage.getItem('hiddenEvents')) || []);
     let customEvents = JSON.parse(localStorage.getItem('customEvents')) || [];
+    let imageUrls = []; // Temp store for image data URLs
+    let currentlyEditingEventId = null;
 
 	// URL parameters have priority over saved settings
 	const fileName = urlParams.get('file') || settings.file;
@@ -762,14 +896,19 @@ input:checked + .slider:before {
 		
 		settingsBtn.onclick = () => {
 			updateSettingsForm(); // Ensure form shows current settings
+			setModalOpenState(true);
 			settingsModal.style.display = 'flex'; // Use flex to center the panel
 		};
-		closeBtn.onclick = () => settingsModal.style.display = 'none';
+		closeBtn.onclick = () => {
+            setModalOpenState(false);
+            settingsModal.style.display = 'none';
+        }
 		saveBtn.onclick = saveSettings;
 		// Close if user clicks outside the panel
 		settingsModal.onclick = (e) => {
 			if (e.target === settingsModal) {
-				settingsModal.style.display = 'none';
+				setModalOpenState(false);
+                settingsModal.style.display = 'none';
 			}
 		};
 
@@ -784,10 +923,11 @@ input:checked + .slider:before {
     function cleanupHiddenEvents() {
         const now = fakeNow ? new Date(fakeNow.getTime()) : new Date();
         let changed = false;
-        const allEventIds = new Set(eventsData.map(generateId));
+        const allKnownEvents = [...eventsData, ...customEvents];
+        const allEventIds = new Set(allKnownEvents.map(generateId));
         
         hiddenEvents.forEach(id => {
-            const event = eventsData.find(e => generateId(e) === id);
+            const event = allKnownEvents.find(e => generateId(e) === id);
             // Remove if event is over OR if it's no longer in the main data source
             if (!event || new Date(event.end) < now) {
                 hiddenEvents.delete(id);
@@ -855,7 +995,9 @@ input:checked + .slider:before {
 	}
 
     function generateId(e) {
-      return `${e.start}_${e.summary}`;
+      // Custom events might not have a start time if created improperly, guard against it.
+      const startTime = e.start || new Date().toISOString();
+      return `${startTime}_${e.summary}`;
     }
 
     function isAllDayEvent(e) {
@@ -881,6 +1023,8 @@ input:checked + .slider:before {
                 const el = document.createElement('div');
                 el.className = 'all-day-event';
                 el.textContent = e.summary;
+                if (e.bgColor) el.style.backgroundColor = e.bgColor;
+                if (e.textColor) el.style.color = e.textColor;
                 el.onclick = () => showDetailsById(generateId(e));
                 container.appendChild(el);
             });
@@ -890,7 +1034,11 @@ input:checked + .slider:before {
     function renderEvents(now) {
       cleanupHiddenEvents();
 	  
-      const allKnownEvents = [...eventsData, ...customEvents];
+      const allEventsMap = new Map();
+      eventsData.forEach(e => allEventsMap.set(generateId(e), e));
+      customEvents.forEach(e => allEventsMap.set(generateId(e), e));
+      const allKnownEvents = Array.from(allEventsMap.values());
+
       const visibleEvents = allKnownEvents.filter(e => {
         const id = generateId(e);
         const isHidden = hiddenEvents.has(id) && !showHiddenOverride;
@@ -995,14 +1143,18 @@ input:checked + .slider:before {
 		}
 
 	function showDetailsById(id, options = {}) {
-	  const allKnownEvents = [...eventsData, ...customEvents];
-	  const e = allKnownEvents.find(ev => generateId(ev) === id);
+	  const allEventsMap = new Map();
+      eventsData.forEach(e => allEventsMap.set(generateId(e), e));
+      customEvents.forEach(e => allEventsMap.set(generateId(e), e));
+	  const e = allEventsMap.get(id);
+
 	  if (!e) {
 		console.error("Sorry, event not found for ID:", id);
 		return;
 	  }
 
 		const fullscreen = document.getElementById('fullscreen');
+        setModalOpenState(true);
 		if (autoCloseTimeout) {
 			clearTimeout(autoCloseTimeout);
 			autoCloseTimeout = null;
@@ -1013,6 +1165,7 @@ input:checked + .slider:before {
 			autoCloseTimeout = setTimeout(() => {
 			  fullscreen.style.display = 'none';
 			  fullscreen.classList.remove('auto-glow');
+              setModalOpenState(false);
 			}, autoCloseDuration); 
 		} else {
 			fullscreen.classList.remove('auto-glow');
@@ -1030,15 +1183,41 @@ input:checked + .slider:before {
       const isHidden = hiddenEvents.has(id);
       const buttonId = isHidden ? 'unhide-event-btn' : 'hide-event-btn';
       const buttonText = isHidden ? 'Unhide this event' : 'Hide this event';
-      const toggleButtonHTML = `<button id="${buttonId}" class="details-action-btn" data-id="${id}">${buttonText}</button>`;
+      
+      let actionButtonsHTML = `<div class="details-action-btn-group">`;
+      // Any event can be edited. This will create a custom override if it's a calendar event.
+      actionButtonsHTML += `<button id="edit-event-btn" class="details-action-btn" data-id="${id}">Edit</button>`;
+      if (e.isCustom) {
+          actionButtonsHTML += `<button id="delete-event-btn" class="details-action-btn" data-id="${id}">Delete</button>`;
+      }
+      actionButtonsHTML += `<button id="${buttonId}" class="details-action-btn" data-id="${id}">${buttonText}</button>`;
+      actionButtonsHTML += `</div>`;
+      
+      let descriptionHTML = '';
+      if (privateOverride || e.private !== 'yes') {
+          try {
+              const descObj = JSON.parse(e.description);
+              if (descObj.images && descObj.images.length > 0) {
+                  descriptionHTML += '<div class="details-image-gallery">';
+                  descObj.images.forEach(imgSrc => {
+                      descriptionHTML += `<img src="${imgSrc}" onclick="showImageViewer('${imgSrc}')">`;
+                  });
+                  descriptionHTML += '</div>';
+              }
+              if (descObj.text) {
+                  descriptionHTML += `<p>${descObj.text}</p>`;
+              }
+          } catch (err) {
+              descriptionHTML = e.description || '<i>No description</i>';
+          }
+      } else {
+          descriptionHTML = '<i>Details hidden</i>';
+      }
+
 
 	  document.getElementById('fullscreen-content').innerHTML = `
 		  <div class="details-card">
-			<button class="close-btn" onclick="
-			  document.getElementById('fullscreen').style.display = 'none';
-			  document.getElementById('fullscreen').classList.remove('auto-glow');
-			  if (window.autoCloseTimeout) { clearTimeout(window.autoCloseTimeout); autoCloseTimeout = null; }
-			">&times;</button>
+			<button class="close-btn">&times;</button>
 			<div class="details-title">${e.summary}</div>
 			<div class="details-row details-date"><span class="details-label">Date:</span> ${dateString}</div>
             ${!isAllDayEvent(e) ? `<div class="details-row"><span class="details-label">Time:</span> ${startTime} &ndash; ${endTime}</div>` : ''}
@@ -1047,17 +1226,22 @@ input:checked + .slider:before {
 			<div class="details-row"><span class="details-label">Privacy:</span> ${privacy}</div>
 			<div class="details-description">
 			  <span class="details-label">Description:</span>
-			  <span>
-				${(privateOverride || e.private !== 'yes')
-				   ? (e.description || '<i>No description</i>')
-				   : '<i>Details hidden</i>'}
-			  </span>
+			  <div>${descriptionHTML}</div>
 			</div>
-            ${toggleButtonHTML}
+            ${actionButtonsHTML}
 		  </div>
 		`;
       
-      document.querySelector('.details-action-btn').onclick = (evt) => {
+      const closeFullscreen = () => {
+          document.getElementById('fullscreen').style.display = 'none';
+          document.getElementById('fullscreen').classList.remove('auto-glow');
+          if (window.autoCloseTimeout) { clearTimeout(window.autoCloseTimeout); autoCloseTimeout = null; }
+          setModalOpenState(false);
+      };
+
+      document.querySelector('#fullscreen-content .close-btn').onclick = closeFullscreen;
+      
+      document.getElementById(buttonId).onclick = (evt) => {
           const eventIdToToggle = evt.target.dataset.id;
           if (hiddenEvents.has(eventIdToToggle)) {
               hiddenEvents.delete(eventIdToToggle);
@@ -1065,9 +1249,35 @@ input:checked + .slider:before {
               hiddenEvents.add(eventIdToToggle);
           }
           localStorage.setItem('hiddenEvents', JSON.stringify(Array.from(hiddenEvents)));
-          document.getElementById('fullscreen').style.display = 'none';
+          closeFullscreen();
           renderEvents(fakeNow || new Date());
       };
+
+      document.getElementById('edit-event-btn').onclick = () => {
+          closeFullscreen();
+          openAddEventModal(e, true);
+      };
+      
+      if (e.isCustom) {
+          const deleteBtn = document.getElementById('delete-event-btn');
+          let deleteTimeout = null;
+          deleteBtn.onclick = (evt) => {
+              if (deleteBtn.classList.contains('confirm-delete')) {
+                  const eventIdToDelete = evt.target.dataset.id;
+                  customEvents = customEvents.filter(event => generateId(event) !== eventIdToDelete);
+                  localStorage.setItem('customEvents', JSON.stringify(customEvents));
+                  closeFullscreen();
+                  renderEvents(fakeNow || new Date());
+              } else {
+                  deleteBtn.classList.add('confirm-delete');
+                  deleteBtn.textContent = 'Confirm?';
+                  deleteTimeout = setTimeout(() => {
+                      deleteBtn.classList.remove('confirm-delete');
+                      deleteBtn.textContent = 'Delete';
+                  }, 3000);
+              }
+          };
+      }
 
 	  fullscreen.style.display = 'flex';
 	}
@@ -1129,12 +1339,6 @@ input:checked + .slider:before {
 
 
       const el = document.createElement('div');
-      el.className = cssClass + ' slide-in';
-      el.dataset.id = id;
-      el.dataset.start = e.start;
-      el.dataset.end = e.end;
-      el.dataset.msUntil = msUntil;
-      el.onclick = () => showDetailsById(id);
       
       const timeDisplay = isAllDayEvent(e)
         ? `<span>All Day</span>`
@@ -1147,7 +1351,85 @@ input:checked + .slider:before {
 			${timeDisplay}
 		  </span>
 		  <div class="${timeClass}">${formatDuration(msUntil)}</div>
+          <div class="event-drop-zone">Drop Images</div>
 		`;
+      
+      if (e.isCustom || customEvents.find(ce => generateId(ce) === id)) {
+        const customEventData = customEvents.find(ce => generateId(ce) === id) || e;
+        cssClass += ' custom-colored';
+        if (customEventData.bgColor) el.style.backgroundColor = customEventData.bgColor;
+        if (customEventData.textColor) {
+            el.style.color = customEventData.textColor;
+            el.querySelector('.event-duration').style.color = customEventData.textColor;
+            el.querySelector('.event-duration').style.opacity = '0.7';
+        }
+      }
+      el.className = cssClass + ' slide-in';
+      el.dataset.id = id;
+      el.dataset.start = e.start;
+      el.dataset.end = e.end;
+      el.dataset.msUntil = msUntil;
+      el.onclick = () => showDetailsById(id);
+
+      // Direct drag-and-drop onto events
+      el.addEventListener('dragover', (evt) => {
+          evt.preventDefault();
+          evt.stopPropagation();
+          el.classList.add('drag-over');
+      });
+      el.addEventListener('dragleave', (evt) => {
+          evt.preventDefault();
+          evt.stopPropagation();
+          el.classList.remove('drag-over');
+      });
+      el.addEventListener('drop', (evt) => {
+          evt.preventDefault();
+          evt.stopPropagation();
+          el.classList.remove('drag-over');
+          
+          const eventId = el.dataset.id;
+          let eventToUpdate = customEvents.find(ev => generateId(ev) === eventId);
+          let isNewOverride = false;
+
+          if (!eventToUpdate) {
+              const originalEvent = eventsData.find(ev => generateId(ev) === eventId);
+              if (!originalEvent) return;
+              eventToUpdate = { ...originalEvent, isCustom: true };
+              isNewOverride = true;
+          }
+
+          const files = evt.dataTransfer.files;
+          const imageFiles = [...files].filter(f => f.type.startsWith('image/'));
+          if (imageFiles.length === 0) return;
+
+          let imagesProcessed = 0;
+          const newImageUrls = [];
+
+          imageFiles.forEach(file => {
+              const reader = new FileReader();
+              reader.onload = (readEvent) => {
+                  newImageUrls.push(readEvent.target.result);
+                  imagesProcessed++;
+                  if (imagesProcessed === imageFiles.length) {
+                      let descObj = {};
+                      try { descObj = JSON.parse(eventToUpdate.description || '{}'); } 
+                      catch (err) { descObj = { text: eventToUpdate.description || '' }; }
+                      
+                      descObj.images = [...(descObj.images || []), ...newImageUrls];
+                      eventToUpdate.description = JSON.stringify(descObj);
+
+                      if (isNewOverride) {
+                          customEvents.push(eventToUpdate);
+                      }
+                      
+                      localStorage.setItem('customEvents', JSON.stringify(customEvents));
+                      renderEvents(fakeNow || new Date());
+                  }
+              };
+              reader.readAsDataURL(file);
+          });
+      });
+
 
 		let inserted = false;
 		for (let child of eventsDiv.children) {
@@ -1195,38 +1477,152 @@ input:checked + .slider:before {
         return localISOTime.substring(0, 16);
     }
 
+    function setModalOpenState(isOpen) {
+        document.body.classList.toggle('modal-open', isOpen);
+    }
+
+    function openAddEventModal(data = {}, isEditing = false) {
+        const modal = document.getElementById('add-event-modal');
+        setModalOpenState(true);
+        const title = modal.querySelector('.modal-title');
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 30 - (now.getMinutes() % 30));
+        const defaultStart = new Date(now);
+        const defaultEnd = new Date(now.getTime() + 60 * 60 * 1000);
+        
+        currentlyEditingEventId = isEditing ? generateId(data) : null;
+        title.textContent = isEditing ? 'Edit Event' : 'Add New Event';
+
+        imageUrls = [];
+        let descriptionText = data.description || '';
+        try {
+            const descObj = JSON.parse(data.description);
+            if (descObj.images) imageUrls = [...descObj.images];
+            if (descObj.hasOwnProperty('text')) descriptionText = descObj.text;
+        } catch(e) {
+            // Not a JSON description, treat as plain text
+        }
+        
+        updateImagePreviewGallery();
+
+        document.getElementById('event-summary').value = data.summary || '';
+        document.getElementById('event-start').value = toLocalISOString(data.start ? new Date(data.start) : defaultStart);
+        document.getElementById('event-end').value = toLocalISOString(data.end ? new Date(data.end) : defaultEnd);
+        document.getElementById('event-description').value = descriptionText;
+        document.getElementById('event-bg-color').value = data.bgColor || '#37474f';
+        document.getElementById('event-text-color').value = data.textColor || '#eceff1';
+        
+        modal.style.display = 'flex';
+    }
+
+    function updateImagePreviewGallery() {
+        const gallery = document.getElementById('image-preview-gallery');
+        gallery.innerHTML = '';
+        imageUrls.forEach((url, index) => {
+            const container = document.createElement('div');
+            container.className = 'thumbnail-container';
+            
+            const img = document.createElement('img');
+            img.src = url;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'thumbnail-remove-btn';
+            removeBtn.innerHTML = '&times;';
+            removeBtn.onclick = () => {
+                imageUrls.splice(index, 1);
+                updateImagePreviewGallery();
+            };
+            
+            container.appendChild(img);
+            container.appendChild(removeBtn);
+            gallery.appendChild(container);
+        });
+    }
+
     function setupAddEventModal() {
         const addBtn = document.getElementById('add-event-btn');
         const modal = document.getElementById('add-event-modal');
         const closeBtn = document.getElementById('add-event-close-btn');
         const saveBtn = document.getElementById('save-event-btn');
+        const dropZone = document.getElementById('image-drop-zone');
 
-        addBtn.onclick = () => {
-            // Reset form
-            document.getElementById('event-summary').value = '';
-            document.getElementById('event-description').value = '';
-            const now = new Date();
-            now.setMinutes(now.getMinutes() + 30 - (now.getMinutes() % 30)); // Default to next half hour
-            document.getElementById('event-start').value = toLocalISOString(now);
-            now.setHours(now.getHours() + 1);
-            document.getElementById('event-end').value = toLocalISOString(now);
-            modal.style.display = 'flex';
-        };
+        addBtn.onclick = () => openAddEventModal({}, false);
 
-        closeBtn.onclick = () => modal.style.display = 'none';
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+            setModalOpenState(false);
+        }
         saveBtn.onclick = () => {
-            const newEvent = {
+            const descriptionText = document.getElementById('event-description').value;
+            let finalDescription;
+
+            if (imageUrls.length > 0) {
+                finalDescription = JSON.stringify({
+                    images: imageUrls,
+                    text: descriptionText
+                });
+            } else {
+                finalDescription = descriptionText;
+            }
+
+            const eventData = {
                 summary: document.getElementById('event-summary').value || 'New Event',
                 start: new Date(document.getElementById('event-start').value).toISOString(),
                 end: new Date(document.getElementById('event-end').value).toISOString(),
-                description: document.getElementById('event-description').value,
+                description: finalDescription,
+                bgColor: document.getElementById('event-bg-color').value,
+                textColor: document.getElementById('event-text-color').value,
                 isCustom: true
             };
-            customEvents.push(newEvent);
+
+            if (currentlyEditingEventId) {
+                const index = customEvents.findIndex(e => generateId(e) === currentlyEditingEventId);
+                if (index > -1) {
+                    customEvents[index] = eventData;
+                } else {
+                    // This case handles overriding a calendar event for the first time
+                    customEvents.push(eventData);
+                }
+            } else {
+                customEvents.push(eventData);
+            }
+
             localStorage.setItem('customEvents', JSON.stringify(customEvents));
             modal.style.display = 'none';
+            setModalOpenState(false);
             renderEvents(fakeNow || new Date());
         };
+
+        // Drag and drop for the modal's drop zone
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add('drag-over');
+        });
+        dropZone.addEventListener('dragleave', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('drag-over');
+        });
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('drag-over');
+            handleFiles(e.dataTransfer.files);
+        });
+    }
+    
+    function handleFiles(files) {
+        [...files].forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    imageUrls.push(e.target.result);
+                    updateImagePreviewGallery();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
     }
 
     function setupDragAndDrop() {
@@ -1234,13 +1630,19 @@ input:checked + .slider:before {
         const dropMarker = document.getElementById('drop-marker');
         let lastY = 0;
 
+        window.addEventListener('dragover', e => {
+            e.preventDefault();
+        });
+        window.addEventListener('drop', e => {
+            e.preventDefault();
+        });
+
         eventsContainer.addEventListener('dragover', e => {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'copy';
             
             let targetEl = e.target.closest('.event, .date-divider');
             if (!targetEl) {
-                // If dragging over empty space at the bottom, find the last element
                 const children = Array.from(eventsContainer.children).filter(c => c.id !== 'drop-marker');
                 targetEl = children[children.length - 1];
             }
@@ -1267,49 +1669,102 @@ input:checked + .slider:before {
         eventsContainer.addEventListener('drop', e => {
             e.preventDefault();
             dropMarker.style.display = 'none';
-            const text = e.dataTransfer.getData('text/plain');
-            if (!text) return;
-
-            // Determine time based on drop position
             const now = fakeNow || new Date();
+            let dropTime;
+
             const children = Array.from(eventsContainer.children).filter(c => c.classList.contains('event'));
-            let dropTime = new Date(now);
+            let closestEl = children.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = lastY - box.top - box.height / 2;
+                return offset < 0 && offset > closest.offset ? { offset: offset, element: child } : closest;
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
             
-            let closestEl = null;
-            let minDistance = Infinity;
-
-            children.forEach(child => {
-                const rect = child.getBoundingClientRect();
-                const midY = rect.top + rect.height / 2;
-                const distance = Math.abs(lastY - midY);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestEl = child;
-                }
-            });
-
-            if (closestEl) {
-                const rect = closestEl.getBoundingClientRect();
-                const isAfter = lastY > rect.top + rect.height / 2;
-                if (isAfter) {
-                    dropTime = new Date(new Date(closestEl.dataset.end).getTime() + 1000); // Drop after this event
-                } else {
-                    dropTime = new Date(new Date(closestEl.dataset.start).getTime() - 60 * 60 * 1000); // Drop an hour before
-                }
+            if(closestEl) {
+                const isAfter = lastY > closestEl.getBoundingClientRect().top + closestEl.offsetHeight / 2;
+                dropTime = new Date(isAfter ? closestEl.dataset.end : closestEl.dataset.start);
             } else {
-                // Dropped in an empty list, default to now
+                dropTime = new Date(now);
                 dropTime.setMinutes(now.getMinutes() + 30 - (now.getMinutes() % 30));
             }
-            
-            // Open the add modal with pre-filled info
-            const modal = document.getElementById('add-event-modal');
-            document.getElementById('event-summary').value = text;
-            document.getElementById('event-start').value = toLocalISOString(dropTime);
-            const endTime = new Date(dropTime.getTime() + 60 * 60 * 1000); // Default 1 hour duration
-            document.getElementById('event-end').value = toLocalISOString(endTime);
-            document.getElementById('event-description').value = '';
-            modal.style.display = 'flex';
+
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = (readEvent) => {
+                    const prefill = {
+                        summary: file.name.replace(/\.[^/.]+$/, ""),
+                        start: dropTime,
+                        end: new Date(dropTime.getTime() + 60*60*1000)
+                    };
+                    if (file.type.startsWith('image/')) {
+                         prefill.image = readEvent.target.result;
+                    } else {
+                         prefill.description = readEvent.target.result;
+                    }
+                    openAddEventModal(prefill, false);
+                };
+                
+                if (file.type.startsWith('image/')) {
+                    reader.readAsDataURL(file);
+                } else {
+                    reader.readAsText(file);
+                }
+            }
+            else {
+                const text = e.dataTransfer.getData('text/plain');
+                if (!text) return;
+                openAddEventModal({
+                    summary: text,
+                    start: dropTime,
+                    end: new Date(dropTime.getTime() + 60 * 60 * 1000)
+                }, false);
+            }
         });
+    }
+
+    function setupClipboardPaste() {
+        window.addEventListener('paste', e => {
+            const addEventModal = document.getElementById('add-event-modal');
+            const isModalOpen = addEventModal.style.display === 'flex';
+
+            const items = e.clipboardData.items;
+            let foundImage = false;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.startsWith('image/')) {
+                    foundImage = true;
+                    const file = items[i].getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        if (isModalOpen) {
+                            imageUrls.push(event.target.result);
+                            updateImagePreviewGallery();
+                        } else {
+                            openAddEventModal({ image: event.target.result }, false);
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                    break; 
+                }
+            }
+            if (!foundImage && !isModalOpen) {
+                const text = e.clipboardData.getData('text/plain');
+                if (text) {
+                    openAddEventModal({ summary: text }, false);
+                }
+            }
+        });
+    }
+
+    function showImageViewer(src) {
+        const modal = document.getElementById('image-viewer-modal');
+        setModalOpenState(true);
+        modal.querySelector('img').src = src;
+        modal.style.display = 'flex';
+        modal.querySelector('.close-btn').onclick = () => {
+            modal.style.display = 'none';
+            setModalOpenState(false);
+        }
     }
 
     function parseCSV(data) {
@@ -1356,6 +1811,7 @@ input:checked + .slider:before {
 	setupSettingsModal();
     setupAddEventModal();
     setupDragAndDrop();
+    setupClipboardPaste();
     fetchAndReloadData();
 	setInterval(updateTime, 1000);
 
