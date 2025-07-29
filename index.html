@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<!-- 
+<!--
   === URL Parameters ===
   You can modify the page behavior using query parameters:
 
-    
-	?count=tomorrow  → Show events until end of tomorrow (default if not specified)
+
+    ?count=tomorrow  → Show events until end of tomorrow (default if not specified)
     ?count=today     → Show only events happening today
-    ?count=3         → Show only the next 3 upcoming events 
+    ?count=3         → Show only the next 3 upcoming events
     ?count=this_week → Show events for the current week
     ?count=all       → Show all future events
 
-    ?now=2025-06-26T15:30:00 
+    ?now=2025-06-26T15:30:00
         → Simulate the current time (useful for testing)
         Format: ISO 8601 (e.g. YYYY-MM-DDTHH:mm:ss)
 
@@ -19,141 +19,141 @@
 -->
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link href="https://cdn.jsdelivr.net/npm/dseg-fonts@2.0.0/dseg.css" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <title>Upcoming Events</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link href="https://cdn.jsdelivr.net/npm/dseg-fonts@2.0.0/dseg.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <title>Upcoming Events</title>
 </head>
 <body>
-  <button id="settings-btn" class="action-btn" title="Settings">⚙️</button>
-  <button id="add-event-btn" class="action-btn" title="Add Event">+</button>
-  <div id="current-time">Loading time...</div>
-  
-  <div id="main-content-wrapper">
-    <div id="all-day-container"></div>
-    <div id="events">
-        <div id="drop-marker"></div>
+    <button id="settings-btn" class="action-btn" title="Settings">⚙️</button>
+    <button id="add-event-btn" class="action-btn" title="Add Event">+</button>
+    <div id="current-time">Loading time...</div>
+
+    <div id="main-content-wrapper">
+        <div id="all-day-container"></div>
+        <div id="events">
+            <div id="drop-marker"></div>
+        </div>
     </div>
-  </div>
 
-  <div id="fullscreen">
-	  <div class="content" id="fullscreen-content"></div>
-	</div>
-  
-  <div id="image-viewer-modal">
-      <button class="close-btn">&times;</button>
-      <img src="" alt="Full size event image">
-  </div>
+    <div id="fullscreen">
+        <div class="content" id="fullscreen-content"></div>
+    </div>
 
-  <div id="add-event-modal" style="display: none;">
-    <div class="modal-card">
-        <button class="close-btn" id="add-event-close-btn">&times;</button>
-        <h2 class="modal-title">Add New Event</h2>
-        <div class="modal-row">
-            <label for="event-summary" class="modal-label">Summary</label>
-            <input type="text" id="event-summary" placeholder="e.g., Team Meeting">
-        </div>
-        <div class="modal-row">
-            <label for="event-start" class="modal-label">Start Time</label>
-            <input type="datetime-local" id="event-start">
-        </div>
-        <div class="modal-row">
-            <label for="event-end" class="modal-label">End Time</label>
-            <input type="datetime-local" id="event-end">
-        </div>
-        <div class="modal-row">
-            <label for="event-description" class="modal-label">Description</label>
-            <textarea id="event-description" rows="3"></textarea>
-        </div>
-        <div id="image-drop-zone">
-            Drop images here or paste from clipboard
-            <div id="image-preview-gallery"></div>
-        </div>
-        <div class="modal-row color-picker-wrapper">
-            <div>
-                <label for="event-bg-color" class="modal-label">Background</label>
-                <input type="color" id="event-bg-color" value="#37474f">
+    <div id="image-viewer-modal">
+        <button class="close-btn">&times;</button>
+        <img src="" alt="Full size event image">
+    </div>
+
+    <div id="add-event-modal" style="display: none;">
+        <div class="modal-card">
+            <button class="close-btn" id="add-event-close-btn">&times;</button>
+            <h2 class="modal-title">Add New Event</h2>
+            <div class="modal-row">
+                <label for="event-summary" class="modal-label">Summary</label>
+                <input type="text" id="event-summary" placeholder="e.g., Team Meeting">
             </div>
-            <div>
-                <label for="event-text-color" class="modal-label">Text</label>
-                <input type="color" id="event-text-color" value="#eceff1">
+            <div class="modal-row">
+                <label for="event-start" class="modal-label">Start Time</label>
+                <input type="datetime-local" id="event-start">
             </div>
+            <div class="modal-row">
+                <label for="event-end" class="modal-label">End Time</label>
+                <input type="datetime-local" id="event-end">
+            </div>
+            <div class="modal-row">
+                <label for="event-description" class="modal-label">Description</label>
+                <textarea id="event-description" rows="3"></textarea>
+            </div>
+            <div id="image-drop-zone">
+                Drop images here or paste from clipboard
+                <div id="image-preview-gallery"></div>
+            </div>
+            <div class="modal-row color-picker-wrapper">
+                <div>
+                    <label for="event-bg-color" class="modal-label">Background</label>
+                    <input type="color" id="event-bg-color" value="#37474f">
+                </div>
+                <div>
+                    <label for="event-text-color" class="modal-label">Text</label>
+                    <input type="color" id="event-text-color" value="#eceff1">
+                </div>
+            </div>
+            <!-- The Save button is no longer needed due to auto-saving -->
         </div>
-        <button id="save-event-btn">Save Event</button>
     </div>
-  </div>
 
-  <div id="settings-modal">
-    <div class="settings-panel">
-      <button class="close-btn" id="settings-close-btn">&times;</button>
-      <h2>Settings</h2>
+    <div id="settings-modal">
+        <div class="settings-panel">
+            <button class="close-btn" id="settings-close-btn">&times;</button>
+            <h2>Settings</h2>
 
-      <fieldset class="count-options-fieldset">
-        <legend>Show Events</legend>
-        <div class="radio-option">
-            <input type="radio" id="count-tomorrow" name="count-type" value="tomorrow">
-            <label for="count-tomorrow">Today & Tomorrow</label>
-        </div>
-        <div class="radio-option">
-            <input type="radio" id="count-today" name="count-type" value="today">
-            <label for="count-today">Today Only</label>
-        </div>
-        <div class="radio-option">
-            <input type="radio" id="count-this_week" name="count-type" value="this_week">
-            <label for="count-this_week">This Week</label>
-        </div>
-        <div class="radio-option">
-            <input type="radio" id="count-all" name="count-type" value="all">
-            <label for="count-all">All Future Events</label>
-        </div>
-        <div class="radio-option">
-            <input type="radio" id="count-custom" name="count-type" value="custom">
-            <label for="count-custom">Next</label>
-            <input type="number" id="custom-count-input" min="1" value="3" disabled>
-            <span>&nbsp;events</span>
-        </div>
-      </fieldset>
+            <fieldset class="count-options-fieldset">
+                <legend>Show Events</legend>
+                <div class="radio-option">
+                    <input type="radio" id="count-tomorrow" name="count-type" value="tomorrow">
+                    <label for="count-tomorrow">Today & Tomorrow</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" id="count-today" name="count-type" value="today">
+                    <label for="count-today">Today Only</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" id="count-this_week" name="count-type" value="this_week">
+                    <label for="count-this_week">This Week</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" id="count-all" name="count-type" value="all">
+                    <label for="count-all">All Future Events</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" id="count-custom" name="count-type" value="custom">
+                    <label for="count-custom">Next</label>
+                    <input type="number" id="custom-count-input" min="1" value="3" disabled>
+                    <span>&nbsp;events</span>
+                </div>
+            </fieldset>
 
-      <div class="setting-row">
-        <label for="layout-setting">Split Column Layout</label>
-        <label class="switch">
-            <input type="checkbox" id="layout-setting">
-            <span class="slider"></span>
-        </label>
-      </div>
-      <div class="setting-row">
-        <label for="private-setting">Show Private Details</label>
-        <label class="switch">
-            <input type="checkbox" id="private-setting">
-            <span class="slider"></span>
-        </label>
-      </div>
-      <div class="setting-row">
-        <label for="trans-setting">Transparent BG</label>
-        <label class="switch">
-            <input type="checkbox" id="trans-setting">
-            <span class="slider"></span>
-        </label>
-      </div>
-      <div class="setting-row">
-        <label for="show-hidden-setting">Show Hidden Events</label>
-        <label class="switch">
-            <input type="checkbox" id="show-hidden-setting">
-            <span class="slider"></span>
-        </label>
-      </div>
-      <div class="setting-row">
-        <label for="file-setting">Data File Name</label>
-        <input type="text" id="file-setting">
-      </div>
-      <button id="save-settings-btn">Save & Reload</button>
+            <div class="setting-row">
+                <label for="layout-setting">Split Column Layout</label>
+                <label class="switch">
+                    <input type="checkbox" id="layout-setting">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <label for="private-setting">Show Private Details</label>
+                <label class="switch">
+                    <input type="checkbox" id="private-setting">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <label for="trans-setting">Transparent BG</label>
+                <label class="switch">
+                    <input type="checkbox" id="trans-setting">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <label for="show-hidden-setting">Show Hidden Events</label>
+                <label class="switch">
+                    <input type="checkbox" id="show-hidden-setting">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <label for="file-setting">Data File Name</label>
+                <input type="text" id="file-setting">
+            </div>
+            <button id="save-settings-btn">Save & Reload</button>
+        </div>
     </div>
-  </div>
 
-  <script src="utils.js"></script>
-  <script src="config.js"></script>
-  <script src="ui.js"></script>
-  <script src="app.js"></script>
+    <script src="utils.js"></script>
+    <script src="config.js"></script>
+    <script src="ui.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
