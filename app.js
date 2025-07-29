@@ -1,74 +1,225 @@
 // This is the main application script that orchestrates everything.
 
 /**
- * Removes old hidden event IDs from localStorage.
+ * Manages all event data, including loading from files, handling custom events,
+ * and providing a unified, filtered list of events for rendering.
  */
-function cleanupHiddenEvents() {
-    const now = fakeNow ? new Date(fakeNow.getTime()) : new Date();
-    let changed = false;
-    const allKnownEvents = [...eventsData, ...customEvents];
-    
-    hiddenEvents.forEach(id => {
-        const event = allKnownEvents.find(e => generateId(e) === id);
-        if (!event || new Date(event.end) < now) {
-            hiddenEvents.delete(id);
-            changed = true;
-        }
-    });
+class EventItemManager {
+    constructor() {
+        this.fileEvents = new Map(); // Events from the CSV file, mapped by uniqueId
+        this.customEvents = new Map(); // Custom events from localStorage, mapped by uniqueId
+        this.hiddenEventIds = new Set(); // Set of uniqueIds for hidden events
+        this.loadFromLocalStorage();
+    }
 
-    if (changed) {
-        localStorage.setItem('hiddenEvents', JSON.stringify(Array.from(hiddenEvents)));
+    /**
+     * Loads custom events and hidden event IDs from the browser's localStorage.
+     */
+    loadFromLocalStorage() {
+        const customEventsRaw = JSON.parse(localStorage.getItem('customEvents')) || [];
+        customEventsRaw.forEach(obj => {
+            const eventItem = EventItem.fromObject(obj);
+            this.customEvents.set(eventItem.uniqueId, eventItem);
+        });
+
+        const hiddenEventsRaw = JSON.parse(localStorage.getItem('hiddenEvents')) || [];
+        this.hiddenEventIds = new Set(hiddenEventsRaw);
+    }
+
+    /**
+     * Saves custom events and hidden event IDs to localStorage.
+     */
+    saveToLocalStorage() {
+        const customEventsToSave = Array.from(this.customEvents.values()).map(event => {
+            // Create a plain object for serialization
+            return {
+                summary: event.summary,
+                start: event.start,
+                end: event.end,
+                description: event.description,
+                rsvp: event.rsvp,
+                private: event.private,
+                ooo: event.ooo,
+                uniqueId: event.uniqueId, // Important to save the ID
+                isCustom: event.isCustom,
+                bgColor: event.bgColor,
+                textColor: event.textColor,
+                images: event.images
+            };
+        });
+        localStorage.setItem('customEvents', JSON.stringify(customEventsToSave));
+        localStorage.setItem('hiddenEvents', JSON.stringify(Array.from(this.hiddenEventIds)));
+    }
+
+    /**
+     * Loads events from a CSV text string, replacing existing file-based events.
+     * @param {string} csvText - The raw CSV data.
+     */
+    loadFromCsv(csvText) {
+        this.fileEvents.clear();
+        const parsedRows = parseCSV(csvText);
+        parsedRows.forEach(row => {
+            const eventItem = EventItem.fromCsv(row);
+            // Only add if it has a valid uniqueId
+            if (eventItem.uniqueId) {
+                this.fileEvents.set(eventItem.uniqueId, eventItem);
+            }
+        });
+    }
+
+    /**
+     * Adds or updates a custom event. If the event already exists, it's replaced.
+     * This handles both new events and edits of existing ones.
+     * @param {EventItem} eventItem - The event to save.
+     */
+    saveCustomEvent(eventItem) {
+        this.customEvents.set(eventItem.uniqueId, eventItem);
+        this.saveToLocalStorage();
+    }
+
+    /**
+     * Deletes a custom event by its ID.
+     * @param {string} eventId - The unique ID of the event to delete.
+     */
+    deleteCustomEvent(eventId) {
+        this.customEvents.delete(eventId);
+        this.saveToLocalStorage();
+    }
+
+    /**
+     * Hides or unhides an event.
+     * @param {string} eventId - The ID of the event to toggle.
+     */
+    toggleEventVisibility(eventId) {
+        if (this.hiddenEventIds.has(eventId)) {
+            this.hiddenEventIds.delete(eventId);
+        } else {
+            this.hiddenEventIds.add(eventId);
+        }
+        this.saveToLocalStorage();
+    }
+
+    /**
+     * Retrieves a single event by its ID, considering custom overrides.
+     * @param {string} eventId - The unique ID of the event.
+     * @returns {EventItem|undefined} The event item, or undefined if not found.
+     */
+    getEventById(eventId) {
+        // Custom events take precedence
+        return this.customEvents.get(eventId) || this.fileEvents.get(eventId);
+    }
+
+    /**
+     * Removes old hidden event IDs from localStorage if the corresponding event has passed.
+     */
+    cleanupHiddenEvents() {
+        const now = fakeNow ? new Date(fakeNow.getTime()) : new Date();
+        let changed = false;
+
+        this.hiddenEventIds.forEach(id => {
+            const event = this.getEventById(id);
+            // If the event doesn't exist anymore or has passed, remove it from the hidden set
+            if (!event || new Date(event.end) < now) {
+                this.hiddenEventIds.delete(id);
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            this.saveToLocalStorage();
+        }
+    }
+
+    /**
+     * Gets a consolidated list of all events, with custom events overriding file events.
+     * This is the master list of all known events.
+     * @returns {Array<EventItem>} A list of all events.
+     */
+    getAllEvents() {
+        const allEventsMap = new Map(this.fileEvents);
+        // Let custom events override file events
+        this.customEvents.forEach((event, id) => {
+            allEventsMap.set(id, event);
+        });
+        return Array.from(allEventsMap.values());
+    }
+
+    /**
+     * Gets a list of events that should be visible on the page, based on current filters.
+     * @param {Date} now - The current time.
+     * @returns {Array<EventItem>} The filtered and sorted list of visible events.
+     */
+    getVisibleEvents(now) {
+        this.cleanupHiddenEvents();
+        const allEvents = this.getAllEvents();
+
+        const visibleEvents = allEvents.filter(e => {
+            const isHidden = this.hiddenEventIds.has(e.uniqueId) && !showHiddenOverride;
+            const isDeclined = e.rsvp === 'declined';
+            const isOOO = e.ooo === 'yes';
+
+            if (!e.end) return false;
+
+            return !isHidden && !isDeclined && !isOOO && new Date(e.end) >= now;
+        });
+
+        return visibleEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
     }
 }
+
+// ===================================================================================
+// Main Application Logic - Now using EventItemManager
+// ===================================================================================
+
+const eventManager = new EventItemManager();
 
 /**
  * Updates the current time display and event countdowns every second.
  */
 function updateTime() {
-  const now = fakeNow ? new Date(fakeNow.getTime()) : new Date();
-  document.getElementById('current-time').innerText = now.toLocaleTimeString();
-  if (fakeNow) fakeNow.setSeconds(fakeNow.getSeconds() + 1);
+    const now = fakeNow ? new Date(fakeNow.getTime()) : new Date();
+    document.getElementById('current-time').innerText = now.toLocaleTimeString();
+    if (fakeNow) fakeNow.setSeconds(fakeNow.getSeconds() + 1);
 
-  Array.from(document.querySelectorAll('.event')).forEach(el => {
-    const start = new Date(el.dataset.start);
-    const end = new Date(el.dataset.end);
-    const msUntil = start - now;
-    const timeDiv = el.querySelector('.time-until, .big-time');
+    Array.from(document.querySelectorAll('.event')).forEach(el => {
+        const start = new Date(el.dataset.start);
+        const end = new Date(el.dataset.end);
+        const msUntil = start - now;
+        const timeDiv = el.querySelector('.time-until, .big-time');
 
-    el.classList.remove('happening-now', 'final-countdown', 'starting-soon');
-    if ((start <= now) && (end > now)) {
-      el.classList.add('happening-now');
-      const eventId = el.dataset.id;
-      const msSinceStart = now - start;
-      
-      if (msSinceStart <= autoCloseDuration && !shownEventDetails.has(eventId)) {
-        shownEventDetails.add(eventId);
-        showDetailsById(eventId, { glow: true });
-      }
+        el.classList.remove('happening-now', 'final-countdown', 'starting-soon');
+        if ((start <= now) && (end > now)) {
+            el.classList.add('happening-now');
+            const eventId = el.dataset.id;
+            const msSinceStart = now - start;
 
-    } else if (msUntil > 0 && msUntil <= 2 * 60 * 1000) {
-      el.classList.add('final-countdown');
-    } else if (msUntil > 2 * 60 * 1000 && msUntil < 10 * 60 * 1000) {
-      el.classList.add('starting-soon');
-    }
+            if (msSinceStart <= autoCloseDuration && !shownEventDetails.has(eventId)) {
+                shownEventDetails.add(eventId);
+                showDetailsById(eventId, { glow: true });
+            }
 
-    if (end <= now && !el.classList.contains('slide-out')) {
-      el.classList.add('slide-out');
-      setTimeout(() => el.remove(), 500);
-    }
-    if (timeDiv) {
-      timeDiv.className = (msUntil > 0 && msUntil < 10 * 60 * 1000) ? 'big-time' : 'time-until';
-      timeDiv.textContent = msUntil > 0 ? formatDuration(msUntil) : (end > now ? 'Happening now' : 'Started');
-    }
-  });
+        } else if (msUntil > 0 && msUntil <= 2 * 60 * 1000) {
+            el.classList.add('final-countdown');
+        } else if (msUntil > 2 * 60 * 1000 && msUntil < 10 * 60 * 1000) {
+            el.classList.add('starting-soon');
+        }
+
+        if (end <= now && !el.classList.contains('slide-out')) {
+            el.classList.add('slide-out');
+            setTimeout(() => el.remove(), 500);
+        }
+        if (timeDiv) {
+            timeDiv.className = (msUntil > 0 && msUntil < 10 * 60 * 1000) ? 'big-time' : 'time-until';
+            timeDiv.textContent = msUntil > 0 ? formatDuration(msUntil) : (end > now ? 'Happening now' : 'Started');
+        }
+    });
 }
 
 /**
  * Renders the all-day events for the current day.
- * @param {Array<object>} events - The list of all-day events.
- * @param {Date} now - The current date.
+ * @param {Array<EventItem>} events - The list of all-day events.
  */
-function renderTodaysAllDayEvents(events, now) {
+function renderTodaysAllDayEvents(events) {
     const container = document.getElementById('all-day-container');
     container.innerHTML = '';
 
@@ -85,7 +236,7 @@ function renderTodaysAllDayEvents(events, now) {
             el.textContent = e.summary;
             if (e.bgColor) el.style.backgroundColor = e.bgColor;
             if (e.textColor) el.style.color = e.textColor;
-            el.onclick = () => showDetailsById(generateId(e));
+            el.onclick = () => showDetailsById(e.uniqueId);
             container.appendChild(el);
         });
     } else {
@@ -95,12 +246,11 @@ function renderTodaysAllDayEvents(events, now) {
 
 /**
  * Renders a single event element.
- * @param {object} e - The event object.
+ * @param {EventItem} e - The event object.
  * @param {Date} now - The current date.
  * @returns {HTMLElement} The event element.
  */
 function createEventElement(e, now) {
-    const id = generateId(e);
     const start = new Date(e.start);
     const end = new Date(e.end);
     const msUntil = start - now;
@@ -123,21 +273,20 @@ function createEventElement(e, now) {
         <div class="event-drop-zone">Drop Images</div>
       `;
 
-    if (e.isCustom || customEvents.find(ce => generateId(ce) === id)) {
-        const customEventData = customEvents.find(ce => generateId(ce) === id) || e;
+    if (e.isCustom) {
         cssClass += ' custom-colored';
-        if (customEventData.bgColor) el.style.backgroundColor = customEventData.bgColor;
-        if (customEventData.textColor) {
-            el.style.color = customEventData.textColor;
-            el.querySelector('.event-duration').style.color = customEventData.textColor;
+        if (e.bgColor) el.style.backgroundColor = e.bgColor;
+        if (e.textColor) {
+            el.style.color = e.textColor;
+            el.querySelector('.event-duration').style.color = e.textColor;
             el.querySelector('.event-duration').style.opacity = '0.7';
         }
     }
     el.className = cssClass;
-    el.dataset.id = id;
+    el.dataset.id = e.uniqueId;
     el.dataset.start = e.start;
     el.dataset.end = e.end;
-    el.onclick = () => showDetailsById(id);
+    el.onclick = () => showDetailsById(e.uniqueId);
 
     // Add a class to trigger the animation
     el.classList.add('slide-in');
@@ -151,112 +300,70 @@ function createEventElement(e, now) {
 
 /**
  * Filters and renders all visible events.
- * @param {Date} now - The current date.
  */
-function renderEvents(now) {
-  cleanupHiddenEvents();
-  
-  const allEventsMap = new Map();
-  // First, add all base events from the CSV
-  eventsData.forEach(e => allEventsMap.set(generateId(e), e));
-  
-  // Then, process custom events to correctly override or add
-  customEvents.forEach(custom => {
-    // A custom event that is an edit of another will have a 'replacesId' property.
-    // This is now added during the save process in ui.js.
-    if (custom.replacesId) {
-        // This is an override. Delete the original it replaces from the map.
-        allEventsMap.delete(custom.replacesId);
+function renderEvents() {
+    const now = fakeNow ? new Date(fakeNow.getTime()) : new Date();
+
+    const allVisibleEvents = eventManager.getVisibleEvents(now);
+
+    const todaysAllDayEvents = [];
+    const otherEvents = [];
+
+    allVisibleEvents.forEach(e => {
+        if (isAllDayEvent(e)) {
+            const start = new Date(e.start);
+            const end = new Date(e.end);
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            if (today >= start && today < end) {
+                todaysAllDayEvents.push(e);
+            }
+        } else {
+            otherEvents.push(e);
+        }
+    });
+
+    renderTodaysAllDayEvents(todaysAllDayEvents);
+
+    let filtered = otherEvents;
+
+    const currentCountParam = urlParams.get('count') || settings.count;
+
+    if (/^\d+$/.test(currentCountParam)) {
+        filtered = filtered.slice(0, parseInt(currentCountParam));
+    } else if (currentCountParam === 'today') {
+        filtered = filtered.filter(e => isSameDay(new Date(e.start), now));
+    } else if (currentCountParam === 'tomorrow') {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+        filtered = filtered.filter(e => isSameDay(new Date(e.start), tomorrow) || isSameDay(new Date(e.start), now));
+    } else if (currentCountParam === 'this_week') {
+        const endOfWeek = new Date(now);
+        endOfWeek.setDate(now.getDate() + (7 - now.getDay()));
+        endOfWeek.setHours(23, 59, 59, 999);
+        filtered = filtered.filter(e => new Date(e.start) <= endOfWeek);
     }
-    // Add the custom event itself to the map. This handles both brand new
-    // custom events and the updated versions of overridden events, using their own ID.
-    allEventsMap.set(generateId(custom), custom);
-  });
 
-  const allKnownEvents = Array.from(allEventsMap.values());
+    const eventsDiv = document.getElementById('events');
+    // Clear previous events and dividers
+    eventsDiv.innerHTML = '<div id="drop-marker"></div>';
 
-  const visibleEvents = allKnownEvents.filter(e => {
-    const id = generateId(e);
-    const isHidden = hiddenEvents.has(id) && !showHiddenOverride;
+    let lastDateStr = '';
+    filtered.forEach(e => {
+        const start = new Date(e.start);
+        const dateStr = start.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Defensive checks for properties that might be undefined or have extra whitespace
-    const rsvpStatus = (e.rsvp || '').trim().toLowerCase();
-    const oooStatus = (e.ooo || '').trim().toLowerCase();
-    
-    const isDeclined = rsvpStatus === 'declined';
-    const isOOO = oooStatus === 'yes';
+        if (dateStr !== lastDateStr && !isAllDayEvent(e)) {
+            const divider = document.createElement('div');
+            divider.className = 'date-divider';
+            divider.textContent = dateStr;
+            eventsDiv.appendChild(divider);
+            lastDateStr = dateStr;
+        }
 
-    // Ensure event has a valid end date before proceeding
-    if (!e.end) return false;
-
-    return !isHidden && !isDeclined && !isOOO && new Date(e.end) >= now;
-  });
-
-  const todaysAllDayEvents = [];
-  const otherEvents = [];
-
-  visibleEvents.forEach(e => {
-      if (isAllDayEvent(e)) {
-          // It's an all-day event. Check if it's for today.
-          const start = new Date(e.start);
-          const end = new Date(e.end);
-          // Normalize 'now' to the start of the day for comparison
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-          // Check if today's date is on or after the start date and before the end date.
-          if (today >= start && today < end) {
-              todaysAllDayEvents.push(e);
-          }
-          // If it's an all-day event for another day, we simply ignore it 
-          // and don't add it to `otherEvents` to prevent it from showing in the timed list.
-      } else {
-          // It's not an all-day event, so it's a timed event. Add it to the list.
-          otherEvents.push(e);
-      }
-  });
-
-  renderTodaysAllDayEvents(todaysAllDayEvents, now);
-
-  let filtered = otherEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
-  
-  // **FIX**: Read the 'count' parameter directly from urlParams every time renderEvents is called.
-  const currentCountParam = urlParams.get('count') || settings.count;
-
-  if (/^\d+$/.test(currentCountParam)) {
-    filtered = filtered.slice(0, parseInt(currentCountParam));
-  } else if (currentCountParam === 'today') {
-    filtered = filtered.filter(e => isSameDay(new Date(e.start), now));
-  } else if (currentCountParam === 'tomorrow') {
-    const tomorrow = new Date(now);
-    tomorrow.setDate(now.getDate() + 1);
-    filtered = filtered.filter(e => isSameDay(new Date(e.start), tomorrow) || isSameDay(new Date(e.start), now));
-  } else if (currentCountParam === 'this_week') {
-    const endOfWeek = new Date(now);
-    endOfWeek.setDate(now.getDate() + (7 - now.getDay()));
-    endOfWeek.setHours(23, 59, 59, 999);
-    filtered = filtered.filter(e => new Date(e.start) <= endOfWeek);
-  }
-
-  const eventsDiv = document.getElementById('events');
-  // Clear previous events and dividers
-  eventsDiv.innerHTML = '<div id="drop-marker"></div>';
-  
-  let lastDateStr = '';
-  filtered.forEach(e => {
-      const start = new Date(e.start);
-      const dateStr = start.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-      
-      if (dateStr !== lastDateStr && !isAllDayEvent(e)) {
-          const divider = document.createElement('div');
-          divider.className = 'date-divider';
-          divider.textContent = dateStr;
-          eventsDiv.appendChild(divider);
-          lastDateStr = dateStr;
-      }
-      
-      const eventElement = createEventElement(e, now);
-      eventsDiv.appendChild(eventElement);
-  });
+        const eventElement = createEventElement(e, now);
+        eventsDiv.appendChild(eventElement);
+    });
 }
 
 
@@ -264,34 +371,40 @@ function renderEvents(now) {
  * Fetches the event data from the source file and triggers a re-render.
  */
 function fetchAndReloadData() {
-  console.log('Reloading event data at', new Date().toLocaleTimeString());
-  fetch(`${fileName}?_=${Date.now()}`)
-    .then(r => r.text())
-    .then(data => {
-      if (fileName.endsWith(".csv")) {
-        eventsData = parseCSV(data);
-      }
-      renderEvents(fakeNow ? new Date(fakeNow.getTime()) : new Date());
-    })
-    .catch(err => console.error("Failed to reload file:", err));
+    console.log('Reloading event data at', new Date().toLocaleTimeString());
+    fetch(`${fileName}?_=${Date.now()}`)
+        .then(r => r.text())
+        .then(data => {
+            if (fileName.endsWith(".csv")) {
+                eventManager.loadFromCsv(data);
+            }
+            renderEvents();
+        })
+        .catch(err => console.error("Failed to reload file:", err));
 }
 
 /**
  * Schedules the data to be reloaded precisely on the next minute.
  */
 function scheduleNextReload() {
-  const now = fakeNow ? new Date(fakeNow.getTime()) : new Date();
-  let msToNext = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
-  if (msToNext <= 0) msToNext += 60000;
-  
-  setTimeout(() => {
-    fetchAndReloadData();
-    setInterval(fetchAndReloadData, 60000);
-  }, msToNext);
+    const now = fakeNow ? new Date(fakeNow.getTime()) : new Date();
+    let msToNext = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+    if (msToNext <= 0) msToNext += 60000;
+
+    setTimeout(() => {
+        fetchAndReloadData();
+        setInterval(fetchAndReloadData, 60000);
+    }, msToNext);
 }
 
 // --- Initial Application Setup ---
 document.addEventListener('DOMContentLoaded', () => {
+    // The 'now' URL parameter for testing should be set up before anything else
+    const nowParam = urlParams.get('now');
+    if (nowParam) {
+        fakeNow = new Date(nowParam);
+    }
+
     setupSettingsModal();
     setupAddEventModal();
     setupDragAndDrop();

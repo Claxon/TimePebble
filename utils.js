@@ -1,4 +1,92 @@
-// This file contains all the general-purpose helper functions.
+// This file contains the EventItem class and general-purpose helper functions.
+
+/**
+ * Represents a single event item, handling its data and unique ID.
+ */
+class EventItem {
+    constructor({
+        subject,
+        start,
+        end,
+        description = "",
+        rsvp = "none",
+        private: isPrivate = "no",
+        ooo = "no",
+        entryid = null,
+        isCustom = false,
+        bgColor = null,
+        textColor = null,
+        images = []
+    }) {
+        this.summary = subject || "No Subject";
+        this.start = start;
+        this.end = end;
+        this.description = description;
+        this.rsvp = (rsvp || "none").toLowerCase();
+        this.private = (isPrivate || "no").toLowerCase();
+        this.ooo = (ooo || "no").toLowerCase();
+        this.entryid = entryid; // The original ID from the source (e.g., CSV)
+        this.isCustom = isCustom;
+        this.bgColor = bgColor;
+        this.textColor = textColor;
+        this.images = images;
+    }
+
+    /**
+     * Generates a deterministic unique ID for the event.
+     * If an entryid from the source exists, it's used.
+     * Otherwise, one is created from the start time and summary.
+     * @returns {string} The unique ID for the event.
+     */
+    get uniqueId() {
+        if (this.entryid) {
+            return this.entryid;
+        }
+        // Fallback for events without a source-provided unique ID
+        return `${this.start}_${this.summary}`;
+    }
+
+    /**
+     * Creates an EventItem instance from a raw CSV object.
+     * @param {object} csvRow - A raw object parsed from a CSV row.
+     * @returns {EventItem} A new EventItem instance.
+     */
+    static fromCsv(csvRow) {
+        return new EventItem({
+            subject: csvRow.subject,
+            start: csvRow.start,
+            end: csvRow.end,
+            description: csvRow.description,
+            rsvp: csvRow.rsvp,
+            private: csvRow.private,
+            ooo: csvRow.ooo,
+            entryid: csvRow.entryid
+        });
+    }
+
+    /**
+     * Creates an EventItem instance from a generic object (e.g., from localStorage).
+     * @param {object} obj - The object to convert.
+     * @returns {EventItem} A new EventItem instance.
+     */
+    static fromObject(obj) {
+        return new EventItem({
+            subject: obj.summary,
+            start: obj.start,
+            end: obj.end,
+            description: obj.description,
+            rsvp: obj.rsvp,
+            private: obj.private,
+            ooo: obj.ooo,
+            entryid: obj.uniqueId || obj.entryid, // Carry over the ID
+            isCustom: obj.isCustom,
+            bgColor: obj.bgColor,
+            textColor: obj.textColor,
+            images: obj.images || []
+        });
+    }
+}
+
 
 /**
  * Formats the duration between two dates into a string like "1 hour 30 mins".
@@ -7,34 +95,19 @@
  * @returns {string} The formatted duration.
  */
 function formatDurationMinutes(start, end) {
-  const ms = end - start;
-  const totalMinutes = Math.round(ms / 60000);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  let text = '';
-  if (hours > 0) text += `${hours} hour${hours !== 1 ? 's' : ''} `;
-  if (minutes > 0 || hours === 0) text += `${minutes} min${minutes !== 1 ? 's' : ''}`;
-  return text.trim();
-}
-
-/**
- * Generates a unique ID for an event based on its start time and summary.
- * @param {object} e - The event object.
- * @returns {string} The unique event ID.
- */
-function generateId(e) {
-    if (e.uniqueId === "") {
-        const startTime = e.start || new Date().toISOString();
-        let uuid = `${startTime}_${e.summary}`;
-        e.uniqueId = uuid;
-        return uuid;
-    }
-    return e.uniqueId;
+    const ms = end - start;
+    const totalMinutes = Math.round(ms / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    let text = '';
+    if (hours > 0) text += `${hours} hour${hours !== 1 ? 's' : ''} `;
+    if (minutes > 0 || hours === 0) text += `${minutes} min${minutes !== 1 ? 's' : ''}`;
+    return text.trim();
 }
 
 /**
  * Checks if an event is an all-day event.
- * @param {object} e - The event object.
+ * @param {EventItem} e - The event object.
  * @returns {boolean} True if the event is all-day.
  */
 function isAllDayEvent(e) {
@@ -53,7 +126,7 @@ function isAllDayEvent(e) {
  * @returns {boolean} True if the dates are on the same day.
  */
 function isSameDay(d1, d2) {
-  return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+    return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
 }
 
 /**
@@ -62,17 +135,17 @@ function isSameDay(d1, d2) {
  * @returns {string} The formatted duration string.
  */
 function formatDuration(ms) {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const days = Math.floor(totalSeconds / (60 * 60 * 24));
-  const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  let parts = [];
-  if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
-  if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
-  if (minutes > 0) parts.push(`${minutes} minute${minutes !== 1 ? 's' : ''}`);
-  if (totalSeconds < 60) parts.push(`${seconds} second${seconds !== 1 ? 's' : ''}`);
-  return parts.join(' ');
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const days = Math.floor(totalSeconds / (60 * 60 * 24));
+    const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    let parts = [];
+    if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
+    if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
+    if (minutes > 0) parts.push(`${minutes} minute${minutes !== 1 ? 's' : ''}`);
+    if (totalSeconds < 60) parts.push(`${seconds} second${seconds !== 1 ? 's' : ''}`);
+    return parts.join(' ');
 }
 
 /**
@@ -81,7 +154,7 @@ function formatDuration(ms) {
  * @returns {string} The formatted time string.
  */
 function formatTimeOnly(date) {
-  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
+    return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 /**
@@ -104,9 +177,9 @@ function parseCSV(text) {
     if (!text) return [];
     const lines = text.trim().split('\n');
     if (lines.length < 2) return [];
-    
+
     const headers = lines.shift().split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
-    
+
     return lines.map(line => {
         const values = [];
         let inQuote = false;
@@ -114,35 +187,37 @@ function parseCSV(text) {
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
             if (char === '"') {
-                if (inQuote && line[i+1] === '"') {
+                if (inQuote && line[i + 1] === '"') {
                     currentField += '"';
                     i++; // Skip next quote
                 } else {
                     inQuote = !inQuote;
                 }
             } else if (char === ',' && !inQuote) {
-                values.push(currentField);
+                values.push(currentField.trim());
                 currentField = '';
             } else {
                 currentField += char;
             }
         }
-        values.push(currentField);
+        values.push(currentField.trim());
 
         const obj = {};
         headers.forEach((h, i) => {
             obj[h] = values[i] || undefined;
         });
 
+        // This now returns a plain object, which will be converted to an EventItem
+        // by the EventItemManager.
         return {
-          summary: obj["subject"] || "No subject",
-          start: obj["start"],
-          end: obj["end"],
-          description: obj["description"] || "",
-          rsvp: (obj["rsvp"] || "").toLowerCase(),
-          ooo: (obj["ooo"] || "").toLowerCase(),
-          private: (obj["private"] || "").toLowerCase(),
-          uniqueId: (obj["entryid"] || "").toLowerCase()
+            subject: obj["subject"] || "No subject",
+            start: obj["start"],
+            end: obj["end"],
+            description: obj["description"] || "",
+            rsvp: obj["rsvp"],
+            ooo: obj["ooo"],
+            private: obj["private"],
+            entryid: obj["entryid"]
         };
     });
 }

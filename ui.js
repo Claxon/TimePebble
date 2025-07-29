@@ -1,4 +1,5 @@
 // This file manages all user interface elements and interactions.
+// It has been updated to use the global 'eventManager' instance.
 
 /**
  * Updates the settings form with the current settings.
@@ -87,10 +88,7 @@ function setupSettingsModal() {
  * @param {object} options - Display options, e.g., { glow: true }.
  */
 function showDetailsById(id, options = {}) {
-    const allEventsMap = new Map();
-    eventsData.forEach(e => allEventsMap.set(generateId(e), e));
-    customEvents.forEach(e => allEventsMap.set(generateId(e), e));
-    const e = allEventsMap.get(id);
+    const e = eventManager.getEventById(id);
 
     if (!e) {
         console.error("Sorry, event not found for ID:", id);
@@ -124,7 +122,7 @@ function showDetailsById(id, options = {}) {
     const rsvp = e.rsvp ? e.rsvp.charAt(0).toUpperCase() + e.rsvp.slice(1) : 'Accepted';
     const privacy = e.private === 'yes' ? "Private" : "Public";
 
-    const isHidden = hiddenEvents.has(id);
+    const isHidden = eventManager.hiddenEventIds.has(id);
     const buttonId = isHidden ? 'unhide-event-btn' : 'hide-event-btn';
     const buttonText = isHidden ? 'Unhide this event' : 'Hide this event';
 
@@ -138,21 +136,18 @@ function showDetailsById(id, options = {}) {
 
     let descriptionHTML = '';
     if (privateOverride || e.private !== 'yes') {
-        try {
-            const descObj = JSON.parse(e.description);
-            if (descObj.images && descObj.images.length > 0) {
-                descriptionHTML += '<div class="details-image-gallery">';
-                descObj.images.forEach(imgSrc => {
-                    descriptionHTML += `<img src="${imgSrc}" onclick="showImageViewer('${imgSrc}')">`;
-                });
-                descriptionHTML += '</div>';
-            }
-            if (descObj.text) {
-                descriptionHTML += `<p>${descObj.text}</p>`;
-            }
-        } catch (err) {
-            descriptionHTML = e.description || '<i>No description</i>';
+        let descriptionText = e.description;
+        let imageList = e.images || [];
+
+        if (imageList.length > 0) {
+            descriptionHTML += '<div class="details-image-gallery">';
+            imageList.forEach(imgSrc => {
+                descriptionHTML += `<img src="${imgSrc}" onclick="showImageViewer('${imgSrc}')">`;
+            });
+            descriptionHTML += '</div>';
         }
+        descriptionHTML += `<p>${descriptionText.replace(/\n/g, '<br>') || '<i>No description</i>'}</p>`;
+
     } else {
         descriptionHTML = '<i>Details hidden</i>';
     }
@@ -185,19 +180,20 @@ function showDetailsById(id, options = {}) {
 
     document.getElementById(buttonId).onclick = (evt) => {
         const eventIdToToggle = evt.target.dataset.id;
-        if (hiddenEvents.has(eventIdToToggle)) {
-            hiddenEvents.delete(eventIdToToggle);
-        } else {
-            hiddenEvents.add(eventIdToToggle);
-        }
-        localStorage.setItem('hiddenEvents', JSON.stringify(Array.from(hiddenEvents)));
+        eventManager.toggleEventVisibility(eventIdToToggle);
         closeFullscreen();
-        renderEvents(fakeNow || new Date());
+        renderEvents();
     };
 
-    document.getElementById('edit-event-btn').onclick = () => {
+    document.getElementById('edit-event-btn').onclick = (evt) => {
+        const eventId = evt.target.dataset.id;
+        const eventToEdit = eventManager.getEventById(eventId);
         closeFullscreen();
-        openAddEventModal(e, true);
+        if (eventToEdit) {
+            openAddEventModal(eventToEdit, true);
+        } else {
+            console.error("Could not find event to edit:", eventId);
+        }
     };
 
     if (e.isCustom) {
@@ -206,10 +202,9 @@ function showDetailsById(id, options = {}) {
         deleteBtn.onclick = (evt) => {
             if (deleteBtn.classList.contains('confirm-delete')) {
                 const eventIdToDelete = evt.target.dataset.id;
-                customEvents = customEvents.filter(event => generateId(event) !== eventIdToDelete);
-                localStorage.setItem('customEvents', JSON.stringify(customEvents));
+                eventManager.deleteCustomEvent(eventIdToDelete);
                 closeFullscreen();
-                renderEvents(fakeNow || new Date());
+                renderEvents();
             } else {
                 deleteBtn.classList.add('confirm-delete');
                 deleteBtn.textContent = 'Confirm?';
@@ -224,6 +219,7 @@ function showDetailsById(id, options = {}) {
     fullscreen.style.display = 'flex';
 }
 
+
 /**
  * Toggles a class on the body to indicate if a modal is open.
  * @param {boolean} isOpen - Whether a modal is open.
@@ -234,7 +230,7 @@ function setModalOpenState(isOpen) {
 
 /**
  * Opens the "Add/Edit Event" modal, pre-filling it with data if provided.
- * @param {object} data - The event data to pre-fill the form with.
+ * @param {EventItem | object} data - The event data to pre-fill the form with.
  * @param {boolean} isEditing - Whether this is an edit operation.
  */
 function openAddEventModal(data = {}, isEditing = false) {
@@ -246,22 +242,16 @@ function openAddEventModal(data = {}, isEditing = false) {
     const defaultStart = new Date(now);
     const defaultEnd = new Date(now.getTime() + 60 * 60 * 1000);
 
-    currentlyEditingEventId = isEditing ? generateId(data) : null;
+    currentlyEditingEventId = isEditing ? data.uniqueId : null;
     title.textContent = isEditing ? 'Edit Event' : 'Add New Event';
 
-    imageUrls = [];
+    imageUrls = data.images ? [...data.images] : [];
+
     let descriptionText = data.description || '';
-    try {
-        const descObj = JSON.parse(data.description);
-        if (descObj.images) imageUrls = [...descObj.images];
-        if (descObj.hasOwnProperty('text')) descriptionText = descObj.text;
-    } catch (e) {
-        // Not a JSON description, treat as plain text
-    }
 
     updateImagePreviewGallery();
 
-    document.getElementById('event-summary').value = data.summary + " -- " + data.uniqueId || '';
+    document.getElementById('event-summary').value = data.summary || '';
     document.getElementById('event-start').value = toLocalISOString(data.start ? new Date(data.start) : defaultStart);
     document.getElementById('event-end').value = toLocalISOString(data.end ? new Date(data.end) : defaultEnd);
     document.getElementById('event-description').value = descriptionText;
@@ -270,6 +260,7 @@ function openAddEventModal(data = {}, isEditing = false) {
 
     modal.style.display = 'flex';
 }
+
 
 /**
  * Updates the image preview gallery in the "Add/Edit Event" modal.
@@ -316,42 +307,25 @@ function setupAddEventModal() {
     }
     saveBtn.onclick = () => {
         const descriptionText = document.getElementById('event-description').value;
-        let finalDescription;
 
-        if (imageUrls.length > 0) {
-            finalDescription = JSON.stringify({
-                images: imageUrls,
-                text: descriptionText
-            });
-        } else {
-            finalDescription = descriptionText;
-        }
-
-        const eventData = {
-            summary: document.getElementById('event-summary').value || 'New Event',
+        const eventDataObject = {
+            subject: document.getElementById('event-summary').value || 'New Event',
             start: new Date(document.getElementById('event-start').value).toISOString(),
             end: new Date(document.getElementById('event-end').value).toISOString(),
-            description: finalDescription,
+            description: descriptionText,
+            images: imageUrls,
             bgColor: document.getElementById('event-bg-color').value,
             textColor: document.getElementById('event-text-color').value,
-            isCustom: true
+            isCustom: true,
+            entryid: currentlyEditingEventId // This will be null for new events, or the ID for edited events
         };
 
-        if (currentlyEditingEventId) {
-            const index = customEvents.findIndex(e => generateId(e) === currentlyEditingEventId);
-            if (index > -1) {
-                customEvents[index] = eventData;
-            } else {
-                customEvents.push(eventData);
-            }
-        } else {
-            customEvents.push(eventData);
-        }
+        const eventItem = new EventItem(eventDataObject);
+        eventManager.saveCustomEvent(eventItem);
 
-        localStorage.setItem('customEvents', JSON.stringify(customEvents));
         modal.style.display = 'none';
         setModalOpenState(false);
-        renderEvents(fakeNow || new Date());
+        renderEvents();
     };
 
     dropZone.addEventListener('dragover', e => {
@@ -457,7 +431,7 @@ function setupDragAndDrop() {
                     end: new Date(dropTime.getTime() + 60 * 60 * 1000)
                 };
                 if (file.type.startsWith('image/')) {
-                    prefill.image = readEvent.target.result;
+                    prefill.images = [readEvent.target.result];
                 } else {
                     prefill.description = readEvent.target.result;
                 }
@@ -497,7 +471,7 @@ function setupClipboardPaste() {
                         imageUrls.push(event.target.result);
                         updateImagePreviewGallery();
                     } else {
-                        openAddEventModal({ image: event.target.result }, false);
+                        openAddEventModal({ images: [event.target.result] }, false);
                     }
                 };
                 reader.readAsDataURL(file);
@@ -517,11 +491,20 @@ function setupClipboardPaste() {
  */
 function showImageViewer(src) {
     const modal = document.getElementById('image-viewer-modal');
+    const viewerImg = modal.querySelector('img');
     setModalOpenState(true);
-    modal.querySelector('img').src = src;
+    viewerImg.src = src;
     modal.style.display = 'flex';
-    modal.querySelector('.close-btn').onclick = () => {
+
+    const closeViewer = () => {
         modal.style.display = 'none';
         setModalOpenState(false);
-    }
+    };
+
+    modal.querySelector('.close-btn').onclick = closeViewer;
+    modal.onclick = (event) => {
+        if (event.target === modal) {
+            closeViewer();
+        }
+    };
 }
