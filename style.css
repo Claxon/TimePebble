@@ -22,6 +22,10 @@ h1 {
     overflow-y: auto;
 }
 
+#image-viewer-modal {
+    z-index: 1002; /* Ensure it's on top of other modals */
+}
+
 .event {
     background-color: #222;
     border: 1px solid #555;
@@ -163,7 +167,7 @@ h1 {
     flex-wrap: wrap;
     justify-content: flex-start;
     gap: 0.5em;
-    align-items: center;
+    align-items: baseline; /* Align textboxes with labels */
 }
 
 .details-label, .modal-label {
@@ -211,29 +215,32 @@ h1 {
 }
 
 .close-btn {
-    position: absolute;
-    top: 1em;
-    right: 1.2em;
     background: #0c1820;
     color: #4fc3f7;
-    border: none;
+    border: 1px solid #4fc3f7;
     font-size: 2em;
     font-weight: bold;
     border-radius: 50%;
-    width: 1.6em;
-    height: 1.6em;
-    line-height: 1.2em;
+    width: 32px;
+    height: 32px;
+    line-height: 28px;
     text-align: center;
     cursor: pointer;
-    box-shadow: 0 2px 10px #0005;
     transition: background 0.2s, color 0.2s;
-    z-index: 10;
+    padding: 0;
 }
 
     .close-btn:hover {
         background: #223344;
         color: #fff;
     }
+
+.modal-card .close-btn {
+    position: absolute;
+    top: 1em;
+    right: 1.2em;
+    z-index: 12;
+}
 
 .date-divider {
     border-top: 2px solid #4fc3f7;
@@ -257,14 +264,7 @@ h1 {
     font-size: 0.99em;
 }
 
-.event-dot {
-    color: #4fc3f7;
-    font-size: 1.3em;
-    line-height: 0.5;
-    margin-top: -2px;
-}
-
-/* Glow and pop-in for auto-triggered details */
+/* --- Glow and pop-in for auto-triggered details --- */
 @keyframes popIn {
     from {
         transform: scale(0.6);
@@ -344,7 +344,7 @@ h1 {
 
 /* --- Two-Column Layout Styles --- */
 #main-content-wrapper {
-    display: block; /* Default layout */
+    display: block;
 }
 
 body.layout-split-column #main-content-wrapper {
@@ -367,12 +367,11 @@ body.layout-split-column #events {
 }
 
 body.layout-split-column .all-day-event {
-    display: block; /* Stack vertically in column */
+    display: block;
     margin-bottom: 0.75em;
 }
 
-
-/* --- Settings & Add Button Styles --- */
+/* --- Main Action Button Styles --- */
 .action-btn {
     position: fixed;
     top: 1.5em;
@@ -405,10 +404,11 @@ body.layout-split-column .all-day-event {
     transform: rotate(45deg);
 }
 
-body.modal-open .action-btn {
+body.modal-open .action-btn, body.viewer-open .action-btn {
     display: none;
 }
 
+/* --- Settings Modal --- */
 #settings-modal {
     display: none;
     position: fixed;
@@ -474,7 +474,6 @@ body.modal-open .action-btn {
     margin-top: 1em;
 }
 
-/* Styles for radio buttons */
 .count-options-fieldset {
     border: 1px solid #4fc3f7;
     border-radius: 8px;
@@ -563,43 +562,51 @@ input:checked + .slider {
         background-color: #0c1820;
     }
 
-/* --- Details View Button Styles --- */
-.details-action-btn-group {
+/* --- Details View Toolbox --- */
+.card-toolbox-left {
+    position: absolute;
+    top: 1.5em;
+    left: -2em;
+    z-index: 11;
     display: flex;
-    gap: 1em;
-    justify-content: center;
-    margin-top: 1.5em;
+    flex-direction: column;
+    gap: 0.5em;
 }
 
-.details-action-btn {
-    padding: 0.5em 1em;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: 1px solid;
-    font-size: 0.9em;
-    background: #223344;
+.toolbox-btn {
+    background: #0c1820;
     color: #aeefff;
-    border-color: #4fc3f7;
+    border: 1px solid #4fc3f7;
+    cursor: pointer;
+    padding: 0;
+    border-radius: 50%;
+    transition: all 0.2s;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-    .details-action-btn:hover {
-        background: #4fc3f7;
-        color: black;
+    .toolbox-btn:hover {
+        background-color: #223344;
+        color: #fff;
     }
 
-#delete-event-btn {
-    background: #610404;
+    .toolbox-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+#delete-event-btn:hover {
+    background-color: #610404;
     color: #ff9a9a;
-    border-color: #ff9a9a;
 }
 
-    #delete-event-btn:hover {
-        background: #ff0000;
-        color: white;
-        border-color: white;
-    }
-
+.details-card .close-btn {
+    position: static;
+}
+/* Override absolute positioning */
 
 /* --- Drag and Drop Marker --- */
 #drop-marker {
@@ -614,35 +621,29 @@ input:checked + .slider {
 }
 
 /* --- Edit/Add Modal Styles --- */
-.modal-card input[type="text"],
-.modal-card input[type="datetime-local"],
-.modal-card textarea {
+.modal-card input[type="text"], .modal-card input[type="datetime-local"], .modal-card textarea {
     background: #0c1820;
     color: white;
-    border: 1px solid #16181e; /* Invisible border by default */
+    border: 1px solid #16181e;
     border-radius: 6px;
     padding: 0.5em;
     box-sizing: border-box;
     transition: border-color 0.2s;
-}
-
-    .modal-card input[type="text"]:focus,
-    .modal-card input[type="datetime-local"]:focus,
-    .modal-card textarea:focus {
-        border-color: #4fc3f7; /* Visible border on focus */
-        outline: none;
-    }
-
-.modal-card input[type="text"],
-.modal-card input[type="datetime-local"],
-.modal-card textarea {
     width: 100%;
 }
+
+    .modal-card input[type="text"]:focus, .modal-card input[type="datetime-local"]:focus, .modal-card textarea:focus {
+        border-color: #4fc3f7;
+        outline: none;
+    }
 
 .modal-card .color-picker-wrapper {
     display: flex;
     justify-content: space-around;
     align-items: center;
+    margin-top: 1.5em;
+    padding-top: 1em;
+    border-top: 1px solid #333;
 }
 
 .modal-card input[type="color"] {

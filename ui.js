@@ -1,5 +1,5 @@
 // This file manages all user interface elements and interactions.
-// Features a modal-based editing flow with automatic saving.
+// Features a modal-based editing flow with automatic saving and UI refinements.
 
 /**
  * Updates the settings form with the current settings.
@@ -128,9 +128,19 @@ function showDetailsById(id, options = {}) {
         descriptionHTML = '<i>Details hidden</i>';
     }
 
+    const hideIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+    const unhideIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+    const deleteIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+    const editIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
+
     document.getElementById('fullscreen-content').innerHTML = `
       <div class="details-card">
-        <button class="close-btn">&times;</button>
+        <div class="card-toolbox-left">
+            <button class="close-btn">&times;</button>
+            <button id="edit-event-btn" class="toolbox-btn" title="Edit Event" data-id="${id}">${editIcon}</button>
+            <button id="hide-event-btn" class="toolbox-btn" title="${isHidden ? 'Unhide Event' : 'Hide Event'}" data-id="${id}">${isHidden ? unhideIcon : hideIcon}</button>
+            ${e.isCustom ? `<button id="delete-event-btn" class="toolbox-btn" title="Delete Event" data-id="${id}">${deleteIcon}</button>` : ''}
+        </div>
         <div class="details-title">${e.summary}</div>
         <div class="details-row details-date"><span class="details-label">Date:</span> ${dateString}</div>
         <div class="details-row"><span class="details-label">Time:</span> ${timeString}</div>
@@ -138,11 +148,6 @@ function showDetailsById(id, options = {}) {
         <div class="details-description">
           <span class="details-label">Description:</span>
           <div>${descriptionHTML}</div>
-        </div>
-        <div class="details-action-btn-group">
-            <button id="edit-event-btn" class="details-action-btn" data-id="${id}">Edit</button>
-            ${e.isCustom ? `<button id="delete-event-btn" class="details-action-btn" data-id="${id}">Delete</button>` : ''}
-            <button id="${isHidden ? 'unhide-event-btn' : 'hide-event-btn'}" class="details-action-btn" data-id="${id}">${isHidden ? 'Unhide' : 'Hide'}</button>
         </div>
       </div>
     `;
@@ -156,19 +161,15 @@ function showDetailsById(id, options = {}) {
     };
 
     fullscreen.querySelector('.close-btn').onclick = closeFullscreen;
-
     fullscreen.querySelector('#edit-event-btn').onclick = () => {
         closeFullscreen();
         openAddEventModal(e, true);
     };
-
-    const hideBtn = fullscreen.querySelector('#unhide-event-btn, #hide-event-btn');
-    if (hideBtn) hideBtn.onclick = () => {
+    fullscreen.querySelector('#hide-event-btn').onclick = () => {
         eventManager.toggleEventVisibility(id);
         closeFullscreen();
         renderEvents();
     };
-
     const deleteBtn = fullscreen.querySelector('#delete-event-btn');
     if (deleteBtn) {
         deleteBtn.onclick = () => {
@@ -179,6 +180,13 @@ function showDetailsById(id, options = {}) {
             }
         };
     }
+
+    // Click off to close
+    fullscreen.onclick = (event) => {
+        if (event.target === fullscreen) {
+            closeFullscreen();
+        }
+    };
 }
 
 /**
@@ -191,12 +199,10 @@ function setModalOpenState(isOpen) {
 
 /**
  * Reads all values from the event modal, creates an EventItem, and saves it.
- * This is the core of the auto-save functionality.
  */
 function autoSaveEventFromModal() {
     console.log("Auto-saving event...");
     const summary = document.getElementById('event-summary').value;
-    // If we're creating a new event and there's no summary, don't save yet.
     if (!currentlyEditingEventId && !summary.trim()) {
         console.log("Skipping auto-save for new event with no summary.");
         return;
@@ -216,18 +222,16 @@ function autoSaveEventFromModal() {
 
     const eventItem = new EventItem(eventDataObject);
 
-    // If this is the first save for a new item, update the currentlyEditingEventId
-    // so subsequent auto-saves update the same item instead of creating new ones.
     if (!currentlyEditingEventId) {
         currentlyEditingEventId = eventItem.uniqueId;
     }
 
     eventManager.saveCustomEvent(eventItem);
-    renderEvents(); // Re-render the main list to show changes live
+    renderEvents();
 }
 
 /**
- * Opens the "Add/Edit Event" modal, pre-filling it with data if provided.
+ * Opens the "Add/Edit Event" modal, pre-filling it with data.
  * @param {EventItem | object} data - The event data to pre-fill the form with.
  * @param {boolean} isEditing - Whether this is an edit operation.
  */
@@ -268,16 +272,16 @@ function updateImagePreviewGallery() {
 
         const img = document.createElement('img');
         img.src = url;
-        img.onclick = () => showImageViewer(url); // Make image clickable
+        img.onclick = () => showImageViewer(url);
 
         const removeBtn = document.createElement('button');
         removeBtn.className = 'thumbnail-remove-btn';
         removeBtn.innerHTML = '&times;';
         removeBtn.onclick = (e) => {
-            e.stopPropagation(); // Prevent image click from firing
+            e.stopPropagation();
             imageUrls.splice(index, 1);
             updateImagePreviewGallery();
-            autoSaveEventFromModal(); // Auto-save on image removal
+            autoSaveEventFromModal();
         };
 
         container.appendChild(img);
@@ -295,7 +299,6 @@ function setupAddEventModal() {
     const closeBtn = document.getElementById('add-event-close-btn');
     const dropZone = document.getElementById('image-drop-zone');
 
-    // Attach auto-save listeners to all inputs
     const inputs = modal.querySelectorAll('input, textarea');
     inputs.forEach(input => {
         const eventType = input.type === 'color' || input.type === 'datetime-local' ? 'change' : 'input';
@@ -304,9 +307,17 @@ function setupAddEventModal() {
 
     addBtn.onclick = () => openAddEventModal({}, false);
 
-    closeBtn.onclick = () => {
+    const closeModal = () => {
         modal.style.display = 'none';
         setModalOpenState(false);
+    };
+    closeBtn.onclick = closeModal;
+
+    // Click off to close
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            closeModal();
+        }
     };
 
     dropZone.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('drag-over'); });
@@ -330,7 +341,7 @@ function handleFiles(files) {
             reader.onload = e => {
                 imageUrls.push(e.target.result);
                 updateImagePreviewGallery();
-                autoSaveEventFromModal(); // Auto-save on image add
+                autoSaveEventFromModal();
             };
             reader.readAsDataURL(file);
         }
@@ -341,7 +352,6 @@ function handleFiles(files) {
  * Sets up global drag and drop listeners for the main event list.
  */
 function setupDragAndDrop() {
-    // This function remains the same as before
     const eventsContainer = document.getElementById('events');
     const dropMarker = document.getElementById('drop-marker');
     let lastY = 0;
@@ -352,17 +362,14 @@ function setupDragAndDrop() {
     eventsContainer.addEventListener('dragover', e => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'copy';
-
         let targetEl = e.target.closest('.event, .date-divider');
         if (!targetEl) {
             const children = Array.from(eventsContainer.children).filter(c => c.id !== 'drop-marker');
             targetEl = children[children.length - 1];
         }
         if (!targetEl) return;
-
         const rect = targetEl.getBoundingClientRect();
         const isAfter = e.clientY > rect.top + rect.height / 2;
-
         dropMarker.style.display = 'block';
         dropMarker.style.top = isAfter ? `${targetEl.offsetTop + targetEl.offsetHeight}px` : `${targetEl.offsetTop}px`;
         lastY = e.clientY;
@@ -379,7 +386,6 @@ function setupDragAndDrop() {
         dropMarker.style.display = 'none';
         const now = fakeNow || new Date();
         let dropTime;
-
         const children = Array.from(eventsContainer.children).filter(c => c.classList.contains('event'));
         let closestEl = children.reduce((closest, child) => {
             const box = child.getBoundingClientRect();
@@ -398,7 +404,6 @@ function setupDragAndDrop() {
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             const file = e.dataTransfer.files[0];
             const reader = new FileReader();
-
             reader.onload = (readEvent) => {
                 const prefill = {
                     summary: file.name.replace(/\.[^/.]+$/, ""),
@@ -412,18 +417,12 @@ function setupDragAndDrop() {
                 }
                 openAddEventModal(prefill, false);
             };
-
             if (file.type.startsWith('image/')) reader.readAsDataURL(file);
             else reader.readAsText(file);
-        }
-        else {
+        } else {
             const text = e.dataTransfer.getData('text/plain');
             if (!text) return;
-            openAddEventModal({
-                summary: text,
-                start: dropTime,
-                end: new Date(dropTime.getTime() + 60 * 60 * 1000)
-            }, false);
+            openAddEventModal({ summary: text, start: dropTime, end: new Date(dropTime.getTime() + 60 * 60 * 1000) }, false);
         }
     });
 }
@@ -436,31 +435,23 @@ function setupClipboardPaste() {
         const activeEl = document.activeElement;
         const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
         const isModalOpen = document.getElementById('add-event-modal').style.display === 'flex';
-
-        // If pasting into the 'Add/Edit' modal, let its own handlers deal with it
-        if (isModalOpen && isTyping) {
-            return;
-        }
+        if (isModalOpen && isTyping) return;
 
         const items = e.clipboardData.items;
         for (let i = 0; i < items.length; i++) {
             if (items[i].type.startsWith('image/')) {
                 const file = items[i].getAsFile();
                 if (isModalOpen) {
-                    handleFiles([file]); // Paste into the edit modal's drop zone
+                    handleFiles([file]);
                 } else {
-                    // If no modal is open, create a new event with the image
                     const reader = new FileReader();
-                    reader.onload = (event) => {
-                        openAddEventModal({ images: [event.target.result] }, false);
-                    };
+                    reader.onload = (event) => openAddEventModal({ images: [event.target.result] }, false);
                     reader.readAsDataURL(file);
                 }
                 return;
             }
         }
 
-        // If no image and not typing, create a new event from pasted text
         if (!isTyping && !isModalOpen) {
             const text = e.clipboardData.getData('text/plain');
             if (text) openAddEventModal({ summary: text });
@@ -476,12 +467,13 @@ function showImageViewer(src) {
     const modal = document.getElementById('image-viewer-modal');
     const viewerImg = modal.querySelector('img');
     setModalOpenState(true);
+    document.body.classList.add('viewer-open');
     viewerImg.src = src;
     modal.style.display = 'flex';
 
     const closeViewer = () => {
         modal.style.display = 'none';
-        setModalOpenState(false);
+        document.body.classList.remove('viewer-open');
     };
 
     modal.querySelector('.close-btn').onclick = closeViewer;
