@@ -56,33 +56,30 @@ function saveSettings() {
 function setupSettingsModal() {
     const settingsBtn = document.getElementById('settings-btn');
     const settingsModal = document.getElementById('settings-modal');
-    const closeBtn = document.getElementById('settings-close-btn');
-    const saveBtn = document.getElementById('save-settings-btn');
-    const countRadios = document.querySelectorAll('input[name="count-type"]');
-    const customCountInput = document.getElementById('custom-count-input');
 
     settingsBtn.onclick = () => {
         updateSettingsForm();
         setModalOpenState(true);
         settingsModal.style.display = 'flex';
     };
-    closeBtn.onclick = () => {
+
+    const closeModal = () => {
         setModalOpenState(false);
         settingsModal.style.display = 'none';
-    }
-    saveBtn.onclick = saveSettings;
-    settingsModal.onclick = (e) => {
-        if (e.target === settingsModal) {
-            setModalOpenState(false);
-            settingsModal.style.display = 'none';
-        }
     };
+
+    settingsModal.querySelector('#settings-close-btn').onclick = closeModal;
+    settingsModal.querySelector('#save-settings-btn').onclick = saveSettings;
+    settingsModal.onclick = (e) => {
+        if (e.target === settingsModal) closeModal();
+    };
+
+    const countRadios = document.querySelectorAll('input[name="count-type"]');
+    const customCountInput = document.getElementById('custom-count-input');
     countRadios.forEach(radio => {
         radio.addEventListener('change', () => {
             customCountInput.disabled = (radio.value !== 'custom');
-            if (radio.value === 'custom') {
-                customCountInput.focus();
-            }
+            if (radio.value === 'custom') customCountInput.focus();
         });
     });
 }
@@ -105,9 +102,7 @@ function showDetailsById(id, options = {}) {
 
     fullscreen.className = (options.glow && !isAllDayEvent(e)) ? 'auto-glow' : '';
     if (options.glow && !isAllDayEvent(e)) {
-        autoCloseTimeout = setTimeout(() => {
-            closeFullscreen();
-        }, autoCloseDuration);
+        autoCloseTimeout = setTimeout(closeFullscreen, autoCloseDuration);
     }
 
     const startDate = new Date(e.start);
@@ -167,8 +162,8 @@ function showDetailsById(id, options = {}) {
     };
     fullscreen.querySelector('#hide-event-btn').onclick = () => {
         eventManager.toggleEventVisibility(id);
-        closeFullscreen();
-        renderEvents();
+        renderEvents(); // Update main list
+        showDetailsById(id); // Re-render the modal to update the icon
     };
     const deleteBtn = fullscreen.querySelector('#delete-event-btn');
     if (deleteBtn) {
@@ -181,11 +176,8 @@ function showDetailsById(id, options = {}) {
         };
     }
 
-    // Click off to close
     fullscreen.onclick = (event) => {
-        if (event.target === fullscreen) {
-            closeFullscreen();
-        }
+        if (event.target === fullscreen) closeFullscreen();
     };
 }
 
@@ -201,12 +193,8 @@ function setModalOpenState(isOpen) {
  * Reads all values from the event modal, creates an EventItem, and saves it.
  */
 function autoSaveEventFromModal() {
-    console.log("Auto-saving event...");
     const summary = document.getElementById('event-summary').value;
-    if (!currentlyEditingEventId && !summary.trim()) {
-        console.log("Skipping auto-save for new event with no summary.");
-        return;
-    }
+    if (!currentlyEditingEventId && !summary.trim()) return;
 
     const eventDataObject = {
         subject: summary || 'New Event',
@@ -221,10 +209,7 @@ function autoSaveEventFromModal() {
     };
 
     const eventItem = new EventItem(eventDataObject);
-
-    if (!currentlyEditingEventId) {
-        currentlyEditingEventId = eventItem.uniqueId;
-    }
+    if (!currentlyEditingEventId) currentlyEditingEventId = eventItem.uniqueId;
 
     eventManager.saveCustomEvent(eventItem);
     renderEvents();
@@ -238,15 +223,14 @@ function autoSaveEventFromModal() {
 function openAddEventModal(data = {}, isEditing = false) {
     const modal = document.getElementById('add-event-modal');
     setModalOpenState(true);
-    const title = modal.querySelector('.modal-title');
+    modal.querySelector('.modal-title').textContent = isEditing ? 'Edit Event' : 'Add New Event';
+
     const now = new Date();
     now.setMinutes(now.getMinutes() + 30 - (now.getMinutes() % 30));
     const defaultStart = new Date(now);
     const defaultEnd = new Date(now.getTime() + 60 * 60 * 1000);
 
     currentlyEditingEventId = isEditing ? data.uniqueId : null;
-    title.textContent = isEditing ? 'Edit Event' : 'Add New Event';
-
     imageUrls = data.images ? [...data.images] : [];
     updateImagePreviewGallery();
 
@@ -257,8 +241,58 @@ function openAddEventModal(data = {}, isEditing = false) {
     document.getElementById('event-bg-color').value = data.bgColor || '#37474f';
     document.getElementById('event-text-color').value = data.textColor || '#eceff1';
 
+    // Dynamically build the toolbox for the edit modal
+    const toolbox = document.getElementById('edit-modal-toolbox');
+    toolbox.innerHTML = ''; // Clear previous buttons
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'close-btn';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.onclick = () => {
+        modal.style.display = 'none';
+        setModalOpenState(false);
+    };
+    toolbox.appendChild(closeBtn);
+
+    if (isEditing) {
+        const isHidden = eventManager.hiddenEventIds.has(data.uniqueId);
+        const hideIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+        const unhideIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+        const deleteIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+
+        const hideBtn = document.createElement('button');
+        hideBtn.className = 'toolbox-btn';
+        hideBtn.title = isHidden ? 'Unhide Event' : 'Hide Event';
+        hideBtn.innerHTML = isHidden ? unhideIcon : hideIcon;
+        hideBtn.onclick = () => {
+            eventManager.toggleEventVisibility(data.uniqueId);
+            renderEvents();
+            // Re-open/refresh the modal to show the new state
+            openAddEventModal(eventManager.getEventById(data.uniqueId), true);
+        };
+        toolbox.appendChild(hideBtn);
+
+        if (data.isCustom) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.id = 'delete-event-btn'; // Keep ID for styling if needed
+            deleteBtn.className = 'toolbox-btn';
+            deleteBtn.title = 'Delete Event';
+            deleteBtn.innerHTML = deleteIcon;
+            deleteBtn.onclick = () => {
+                if (confirm('Are you sure you want to delete this event permanently?')) {
+                    eventManager.deleteCustomEvent(data.uniqueId);
+                    modal.style.display = 'none';
+                    setModalOpenState(false);
+                    renderEvents();
+                }
+            };
+            toolbox.appendChild(deleteBtn);
+        }
+    }
+
     modal.style.display = 'flex';
 }
+
 
 /**
  * Updates the image preview gallery in the "Add/Edit Event" modal.
@@ -266,14 +300,13 @@ function openAddEventModal(data = {}, isEditing = false) {
 function updateImagePreviewGallery() {
     const gallery = document.getElementById('image-preview-gallery');
     gallery.innerHTML = '';
+
     imageUrls.forEach((url, index) => {
         const container = document.createElement('div');
         container.className = 'thumbnail-container';
-
         const img = document.createElement('img');
         img.src = url;
         img.onclick = () => showImageViewer(url);
-
         const removeBtn = document.createElement('button');
         removeBtn.className = 'thumbnail-remove-btn';
         removeBtn.innerHTML = '&times;';
@@ -283,7 +316,6 @@ function updateImagePreviewGallery() {
             updateImagePreviewGallery();
             autoSaveEventFromModal();
         };
-
         container.appendChild(img);
         container.appendChild(removeBtn);
         gallery.appendChild(container);
@@ -296,7 +328,6 @@ function updateImagePreviewGallery() {
 function setupAddEventModal() {
     const addBtn = document.getElementById('add-event-btn');
     const modal = document.getElementById('add-event-modal');
-    const closeBtn = document.getElementById('add-event-close-btn');
     const dropZone = document.getElementById('image-drop-zone');
 
     const inputs = modal.querySelectorAll('input, textarea');
@@ -311,13 +342,9 @@ function setupAddEventModal() {
         modal.style.display = 'none';
         setModalOpenState(false);
     };
-    closeBtn.onclick = closeModal;
 
-    // Click off to close
     modal.onclick = (e) => {
-        if (e.target === modal) {
-            closeModal();
-        }
+        if (e.target === modal) closeModal();
     };
 
     dropZone.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('drag-over'); });

@@ -48,7 +48,9 @@
 
     <div id="add-event-modal" style="display: none;">
         <div class="modal-card">
-            <button class="close-btn" id="add-event-close-btn">&times;</button>
+            <div class="card-toolbox-left" id="edit-modal-toolbox">
+                <!-- Toolbox buttons are dynamically inserted here by ui.js -->
+            </div>
             <h2 class="modal-title">Add New Event</h2>
             <div class="modal-row">
                 <label for="event-summary" class="modal-label">Summary</label>
@@ -62,12 +64,11 @@
                 <label for="event-end" class="modal-label">End Time</label>
                 <input type="datetime-local" id="event-end">
             </div>
-            <div class="modal-row">
+            <div class="modal-row description-row">
                 <label for="event-description" class="modal-label">Description</label>
                 <textarea id="event-description" rows="3"></textarea>
             </div>
             <div id="image-drop-zone">
-                Drop images here or paste from clipboard
                 <div id="image-preview-gallery"></div>
             </div>
             <div class="modal-row color-picker-wrapper">
@@ -80,13 +81,14 @@
                     <input type="color" id="event-text-color" value="#eceff1">
                 </div>
             </div>
-            <!-- The Save button is no longer needed due to auto-saving -->
         </div>
     </div>
 
     <div id="settings-modal">
         <div class="settings-panel">
-            <button class="close-btn" id="settings-close-btn">&times;</button>
+            <div class="card-toolbox-left">
+                <button class="close-btn" id="settings-close-btn">&times;</button>
+            </div>
             <h2>Settings</h2>
 
             <fieldset class="count-options-fieldset">

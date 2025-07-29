@@ -143,7 +143,7 @@ h1 {
     background: #16181e;
     border-radius: 16px;
     box-shadow: 0 4px 24px rgba(80,200,255,0.12);
-    padding: 2em 2em 1.5em 2em;
+    padding: 2em 2em 1.5em 4em; /* Add padding-left for the toolbox */
     color: #fff;
     max-width: 450px;
     margin: 2em auto 0 auto;
@@ -167,15 +167,24 @@ h1 {
     flex-wrap: wrap;
     justify-content: flex-start;
     gap: 0.5em;
-    align-items: baseline; /* Align textboxes with labels */
+    align-items: center;
 }
+
+    .modal-row.description-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+        .modal-row.description-row .modal-label {
+            padding-bottom: 0.5em;
+        }
+
 
 .details-label, .modal-label {
     color: #aeefff;
     min-width: 90px;
     font-weight: 500;
     display: inline-block;
-    padding-top: 0.5em;
 }
 
 .details-date {
@@ -234,13 +243,6 @@ h1 {
         background: #223344;
         color: #fff;
     }
-
-.modal-card .close-btn {
-    position: absolute;
-    top: 1em;
-    right: 1.2em;
-    z-index: 12;
-}
 
 .date-divider {
     border-top: 2px solid #4fc3f7;
@@ -562,7 +564,7 @@ input:checked + .slider {
         background-color: #0c1820;
     }
 
-/* --- Details View Toolbox --- */
+/* --- Details & Edit View Toolbox --- */
 .card-toolbox-left {
     position: absolute;
     top: 1.5em;
@@ -603,10 +605,9 @@ input:checked + .slider {
     color: #ff9a9a;
 }
 
-.details-card .close-btn {
+.details-card .close-btn, .modal-card .close-btn {
     position: static;
 }
-/* Override absolute positioning */
 
 /* --- Drag and Drop Marker --- */
 #drop-marker {
@@ -621,7 +622,9 @@ input:checked + .slider {
 }
 
 /* --- Edit/Add Modal Styles --- */
-.modal-card input[type="text"], .modal-card input[type="datetime-local"], .modal-card textarea {
+.modal-card .modal-row input[type="text"],
+.modal-card .modal-row input[type="datetime-local"],
+.modal-card .modal-row textarea {
     background: #0c1820;
     color: white;
     border: 1px solid #16181e;
@@ -629,13 +632,24 @@ input:checked + .slider {
     padding: 0.5em;
     box-sizing: border-box;
     transition: border-color 0.2s;
+}
+
+.modal-card .modal-row input[type="text"],
+.modal-card .modal-row input[type="datetime-local"] {
+    flex: 1;
+    min-width: 0;
+}
+
+.modal-card .modal-row textarea {
     width: 100%;
 }
 
-    .modal-card input[type="text"]:focus, .modal-card input[type="datetime-local"]:focus, .modal-card textarea:focus {
-        border-color: #4fc3f7;
-        outline: none;
-    }
+.modal-card input[type="text"]:focus,
+.modal-card input[type="datetime-local"]:focus,
+.modal-card textarea:focus {
+    border-color: #4fc3f7;
+    outline: none;
+}
 
 .modal-card .color-picker-wrapper {
     display: flex;
@@ -673,21 +687,43 @@ input:checked + .slider {
     border-radius: 8px;
     padding: 1em;
     text-align: center;
-    color: #aeefff;
+    color: transparent;
     margin-top: 1em;
     transition: background-color 0.2s;
+    position: relative;
+    min-height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-    #image-drop-zone.drag-over {
-        background-color: #223344;
+    #image-drop-zone::before {
+        content: 'Drop images here or paste';
+        color: #aeefff;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        transition: opacity 0.2s;
+        pointer-events: none;
+        background-color: rgba(0,0,0,0.5);
+        padding: 1em;
+        border-radius: 8px;
+        z-index: 3;
+    }
+
+    #image-drop-zone:hover::before, #image-drop-zone.drag-over::before {
+        opacity: 1;
     }
 
 #image-preview-gallery {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
-    margin-top: 10px;
     justify-content: center;
+    position: relative;
+    z-index: 2;
 }
 
 .thumbnail-container {
@@ -696,8 +732,8 @@ input:checked + .slider {
 }
 
     .thumbnail-container img {
-        max-width: 80px;
-        max-height: 80px;
+        max-width: 120px;
+        max-height: 120px;
         border-radius: 8px;
         cursor: pointer;
     }
