@@ -57,7 +57,7 @@ function setupSettingsModal() {
     const saveBtn = document.getElementById('save-settings-btn');
     const countRadios = document.querySelectorAll('input[name="count-type"]');
     const customCountInput = document.getElementById('custom-count-input');
-    
+
     settingsBtn.onclick = () => {
         updateSettingsForm();
         setModalOpenState(true);
@@ -87,15 +87,15 @@ function setupSettingsModal() {
  * @param {object} options - Display options, e.g., { glow: true }.
  */
 function showDetailsById(id, options = {}) {
-  const allEventsMap = new Map();
-  eventsData.forEach(e => allEventsMap.set(generateId(e), e));
-  customEvents.forEach(e => allEventsMap.set(generateId(e), e));
-  const e = allEventsMap.get(id);
+    const allEventsMap = new Map();
+    eventsData.forEach(e => allEventsMap.set(generateId(e), e));
+    customEvents.forEach(e => allEventsMap.set(generateId(e), e));
+    const e = allEventsMap.get(id);
 
-  if (!e) {
-    console.error("Sorry, event not found for ID:", id);
-    return;
-  }
+    if (!e) {
+        console.error("Sorry, event not found for ID:", id);
+        return;
+    }
 
     const fullscreen = document.getElementById('fullscreen');
     setModalOpenState(true);
@@ -103,61 +103,61 @@ function showDetailsById(id, options = {}) {
         clearTimeout(autoCloseTimeout);
         autoCloseTimeout = null;
     }
-      
+
     if (options.glow && !isAllDayEvent(e)) {
         fullscreen.classList.add('auto-glow');
         autoCloseTimeout = setTimeout(() => {
-          fullscreen.style.display = 'none';
-          fullscreen.classList.remove('auto-glow');
-          setModalOpenState(false);
-        }, autoCloseDuration); 
+            fullscreen.style.display = 'none';
+            fullscreen.classList.remove('auto-glow');
+            setModalOpenState(false);
+        }, autoCloseDuration);
     } else {
         fullscreen.classList.remove('auto-glow');
     }
 
-  const startDate = new Date(e.start);
-  const endDate = new Date(e.end);
-  const dateString = startDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  const startTime = formatTimeOnly(startDate);
-  const endTime = formatTimeOnly(endDate);
-  const duration = formatDurationMinutes(startDate, endDate);
-  const rsvp = e.rsvp ? e.rsvp.charAt(0).toUpperCase() + e.rsvp.slice(1) : 'Accepted';
-  const privacy = e.private === 'yes' ? "Private" : "Public";
-  
-  const isHidden = hiddenEvents.has(id);
-  const buttonId = isHidden ? 'unhide-event-btn' : 'hide-event-btn';
-  const buttonText = isHidden ? 'Unhide this event' : 'Hide this event';
-  
-  let actionButtonsHTML = `<div class="details-action-btn-group">`;
-  actionButtonsHTML += `<button id="edit-event-btn" class="details-action-btn" data-id="${id}">Edit</button>`;
-  if (e.isCustom) {
-      actionButtonsHTML += `<button id="delete-event-btn" class="details-action-btn" data-id="${id}">Delete</button>`;
-  }
-  actionButtonsHTML += `<button id="${buttonId}" class="details-action-btn" data-id="${id}">${buttonText}</button>`;
-  actionButtonsHTML += `</div>`;
-  
-  let descriptionHTML = '';
-  if (privateOverride || e.private !== 'yes') {
-      try {
-          const descObj = JSON.parse(e.description);
-          if (descObj.images && descObj.images.length > 0) {
-              descriptionHTML += '<div class="details-image-gallery">';
-              descObj.images.forEach(imgSrc => {
-                  descriptionHTML += `<img src="${imgSrc}" onclick="showImageViewer('${imgSrc}')">`;
-              });
-              descriptionHTML += '</div>';
-          }
-          if (descObj.text) {
-              descriptionHTML += `<p>${descObj.text}</p>`;
-          }
-      } catch (err) {
-          descriptionHTML = e.description || '<i>No description</i>';
-      }
-  } else {
-      descriptionHTML = '<i>Details hidden</i>';
-  }
+    const startDate = new Date(e.start);
+    const endDate = new Date(e.end);
+    const dateString = startDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const startTime = formatTimeOnly(startDate);
+    const endTime = formatTimeOnly(endDate);
+    const duration = formatDurationMinutes(startDate, endDate);
+    const rsvp = e.rsvp ? e.rsvp.charAt(0).toUpperCase() + e.rsvp.slice(1) : 'Accepted';
+    const privacy = e.private === 'yes' ? "Private" : "Public";
 
-  document.getElementById('fullscreen-content').innerHTML = `
+    const isHidden = hiddenEvents.has(id);
+    const buttonId = isHidden ? 'unhide-event-btn' : 'hide-event-btn';
+    const buttonText = isHidden ? 'Unhide this event' : 'Hide this event';
+
+    let actionButtonsHTML = `<div class="details-action-btn-group">`;
+    actionButtonsHTML += `<button id="edit-event-btn" class="details-action-btn" data-id="${id}">Edit</button>`;
+    if (e.isCustom) {
+        actionButtonsHTML += `<button id="delete-event-btn" class="details-action-btn" data-id="${id}">Delete</button>`;
+    }
+    actionButtonsHTML += `<button id="${buttonId}" class="details-action-btn" data-id="${id}">${buttonText}</button>`;
+    actionButtonsHTML += `</div>`;
+
+    let descriptionHTML = '';
+    if (privateOverride || e.private !== 'yes') {
+        try {
+            const descObj = JSON.parse(e.description);
+            if (descObj.images && descObj.images.length > 0) {
+                descriptionHTML += '<div class="details-image-gallery">';
+                descObj.images.forEach(imgSrc => {
+                    descriptionHTML += `<img src="${imgSrc}" onclick="showImageViewer('${imgSrc}')">`;
+                });
+                descriptionHTML += '</div>';
+            }
+            if (descObj.text) {
+                descriptionHTML += `<p>${descObj.text}</p>`;
+            }
+        } catch (err) {
+            descriptionHTML = e.description || '<i>No description</i>';
+        }
+    } else {
+        descriptionHTML = '<i>Details hidden</i>';
+    }
+
+    document.getElementById('fullscreen-content').innerHTML = `
       <div class="details-card">
         <button class="close-btn">&times;</button>
         <div class="details-title">${e.summary}</div>
@@ -173,56 +173,55 @@ function showDetailsById(id, options = {}) {
         ${actionButtonsHTML}
       </div>
     `;
-  
-  const closeFullscreen = () => {
-      document.getElementById('fullscreen').style.display = 'none';
-      document.getElementById('fullscreen').classList.remove('auto-glow');
-      if (window.autoCloseTimeout) { clearTimeout(window.autoCloseTimeout); autoCloseTimeout = null; }
-      setModalOpenState(false);
-  };
 
-  document.querySelector('#fullscreen-content .close-btn').onclick = closeFullscreen;
-  
-  document.getElementById(buttonId).onclick = (evt) => {
-      const eventIdToToggle = evt.target.dataset.id;
-      if (hiddenEvents.has(eventIdToToggle)) {
-          hiddenEvents.delete(eventIdToToggle);
-      } else {
-          hiddenEvents.add(eventIdToToggle);
-      }
-      localStorage.setItem('hiddenEvents', JSON.stringify(Array.from(hiddenEvents)));
-      closeFullscreen();
-      renderEvents(fakeNow || new Date());
-  };
+    const closeFullscreen = () => {
+        document.getElementById('fullscreen').style.display = 'none';
+        document.getElementById('fullscreen').classList.remove('auto-glow');
+        if (window.autoCloseTimeout) { clearTimeout(window.autoCloseTimeout); autoCloseTimeout = null; }
+        setModalOpenState(false);
+    };
 
-  document.getElementById('edit-event-btn').onclick = () => {
-      closeFullscreen();
-      const eventToEdit = allEventsMap.get(id);
-      openAddEventModal(eventToEdit, true);
-  };
-  
-  if (e.isCustom) {
-      const deleteBtn = document.getElementById('delete-event-btn');
-      let deleteTimeout = null;
-      deleteBtn.onclick = (evt) => {
-          if (deleteBtn.classList.contains('confirm-delete')) {
-              const eventIdToDelete = evt.target.dataset.id;
-              customEvents = customEvents.filter(event => generateId(event) !== eventIdToDelete);
-              localStorage.setItem('customEvents', JSON.stringify(customEvents));
-              closeFullscreen();
-              renderEvents(fakeNow || new Date());
-          } else {
-              deleteBtn.classList.add('confirm-delete');
-              deleteBtn.textContent = 'Confirm?';
-              deleteTimeout = setTimeout(() => {
-                  deleteBtn.classList.remove('confirm-delete');
-                  deleteBtn.textContent = 'Delete';
-              }, 3000);
-          }
-      };
-  }
+    document.querySelector('#fullscreen-content .close-btn').onclick = closeFullscreen;
 
-  fullscreen.style.display = 'flex';
+    document.getElementById(buttonId).onclick = (evt) => {
+        const eventIdToToggle = evt.target.dataset.id;
+        if (hiddenEvents.has(eventIdToToggle)) {
+            hiddenEvents.delete(eventIdToToggle);
+        } else {
+            hiddenEvents.add(eventIdToToggle);
+        }
+        localStorage.setItem('hiddenEvents', JSON.stringify(Array.from(hiddenEvents)));
+        closeFullscreen();
+        renderEvents(fakeNow || new Date());
+    };
+
+    document.getElementById('edit-event-btn').onclick = () => {
+        closeFullscreen();
+        openAddEventModal(e, true);
+    };
+
+    if (e.isCustom) {
+        const deleteBtn = document.getElementById('delete-event-btn');
+        let deleteTimeout = null;
+        deleteBtn.onclick = (evt) => {
+            if (deleteBtn.classList.contains('confirm-delete')) {
+                const eventIdToDelete = evt.target.dataset.id;
+                customEvents = customEvents.filter(event => generateId(event) !== eventIdToDelete);
+                localStorage.setItem('customEvents', JSON.stringify(customEvents));
+                closeFullscreen();
+                renderEvents(fakeNow || new Date());
+            } else {
+                deleteBtn.classList.add('confirm-delete');
+                deleteBtn.textContent = 'Confirm?';
+                deleteTimeout = setTimeout(() => {
+                    deleteBtn.classList.remove('confirm-delete');
+                    deleteBtn.textContent = 'Delete';
+                }, 3000);
+            }
+        };
+    }
+
+    fullscreen.style.display = 'flex';
 }
 
 /**
@@ -246,7 +245,7 @@ function openAddEventModal(data = {}, isEditing = false) {
     now.setMinutes(now.getMinutes() + 30 - (now.getMinutes() % 30));
     const defaultStart = new Date(now);
     const defaultEnd = new Date(now.getTime() + 60 * 60 * 1000);
-    
+
     currentlyEditingEventId = isEditing ? generateId(data) : null;
     title.textContent = isEditing ? 'Edit Event' : 'Add New Event';
 
@@ -256,19 +255,19 @@ function openAddEventModal(data = {}, isEditing = false) {
         const descObj = JSON.parse(data.description);
         if (descObj.images) imageUrls = [...descObj.images];
         if (descObj.hasOwnProperty('text')) descriptionText = descObj.text;
-    } catch(e) {
+    } catch (e) {
         // Not a JSON description, treat as plain text
     }
-    
+
     updateImagePreviewGallery();
 
-    document.getElementById('event-summary').value = data.summary || '';
+    document.getElementById('event-summary').value = data.summary + " -- " + data.uniqueId || '';
     document.getElementById('event-start').value = toLocalISOString(data.start ? new Date(data.start) : defaultStart);
     document.getElementById('event-end').value = toLocalISOString(data.end ? new Date(data.end) : defaultEnd);
     document.getElementById('event-description').value = descriptionText;
     document.getElementById('event-bg-color').value = data.bgColor || '#37474f';
     document.getElementById('event-text-color').value = data.textColor || '#eceff1';
-    
+
     modal.style.display = 'flex';
 }
 
@@ -281,10 +280,10 @@ function updateImagePreviewGallery() {
     imageUrls.forEach((url, index) => {
         const container = document.createElement('div');
         container.className = 'thumbnail-container';
-        
+
         const img = document.createElement('img');
         img.src = url;
-        
+
         const removeBtn = document.createElement('button');
         removeBtn.className = 'thumbnail-remove-btn';
         removeBtn.innerHTML = '&times;';
@@ -292,7 +291,7 @@ function updateImagePreviewGallery() {
             imageUrls.splice(index, 1);
             updateImagePreviewGallery();
         };
-        
+
         container.appendChild(img);
         container.appendChild(removeBtn);
         gallery.appendChild(container);
@@ -339,16 +338,13 @@ function setupAddEventModal() {
         };
 
         if (currentlyEditingEventId) {
-            // This is an edit of an existing event.
-            // Add a 'replacesId' property to link it to the original event's ID.
-            eventData.replacesId = currentlyEditingEventId;
-            
-            // Remove any previous custom version of this event to avoid duplicates.
-            customEvents = customEvents.filter(e => e.replacesId !== currentlyEditingEventId && generateId(e) !== currentlyEditingEventId);
-            
-            customEvents.push(eventData);
+            const index = customEvents.findIndex(e => generateId(e) === currentlyEditingEventId);
+            if (index > -1) {
+                customEvents[index] = eventData;
+            } else {
+                customEvents.push(eventData);
+            }
         } else {
-            // This is a brand new event.
             customEvents.push(eventData);
         }
 
@@ -358,7 +354,6 @@ function setupAddEventModal() {
         renderEvents(fakeNow || new Date());
     };
 
-    // Drag and drop for the modal's drop zone
     dropZone.addEventListener('dragover', e => {
         e.preventDefault();
         e.stopPropagation();
@@ -408,7 +403,7 @@ function setupDragAndDrop() {
     eventsContainer.addEventListener('dragover', e => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'copy';
-        
+
         let targetEl = e.target.closest('.event, .date-divider');
         if (!targetEl) {
             const children = Array.from(eventsContainer.children).filter(c => c.id !== 'drop-marker');
@@ -418,7 +413,7 @@ function setupDragAndDrop() {
 
         const rect = targetEl.getBoundingClientRect();
         const isAfter = e.clientY > rect.top + rect.height / 2;
-        
+
         dropMarker.style.display = 'block';
         dropMarker.style.top = isAfter ? `${targetEl.offsetTop + targetEl.offsetHeight}px` : `${targetEl.offsetTop}px`;
         lastY = e.clientY;
@@ -442,8 +437,8 @@ function setupDragAndDrop() {
             const offset = lastY - box.top - box.height / 2;
             return offset < 0 && offset > closest.offset ? { offset: offset, element: child } : closest;
         }, { offset: Number.NEGATIVE_INFINITY }).element;
-        
-        if(closestEl) {
+
+        if (closestEl) {
             const isAfter = lastY > closestEl.getBoundingClientRect().top + closestEl.offsetHeight / 2;
             dropTime = new Date(isAfter ? closestEl.dataset.end : closestEl.dataset.start);
         } else {
@@ -454,21 +449,21 @@ function setupDragAndDrop() {
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             const file = e.dataTransfer.files[0];
             const reader = new FileReader();
-            
+
             reader.onload = (readEvent) => {
                 const prefill = {
                     summary: file.name.replace(/\.[^/.]+$/, ""),
                     start: dropTime,
-                    end: new Date(dropTime.getTime() + 60*60*1000)
+                    end: new Date(dropTime.getTime() + 60 * 60 * 1000)
                 };
                 if (file.type.startsWith('image/')) {
-                     prefill.image = readEvent.target.result;
+                    prefill.image = readEvent.target.result;
                 } else {
-                     prefill.description = readEvent.target.result;
+                    prefill.description = readEvent.target.result;
                 }
                 openAddEventModal(prefill, false);
             };
-            
+
             if (file.type.startsWith('image/')) reader.readAsDataURL(file);
             else reader.readAsText(file);
         }
@@ -506,7 +501,7 @@ function setupClipboardPaste() {
                     }
                 };
                 reader.readAsDataURL(file);
-                break; 
+                break;
             }
         }
         if (!foundImage && !isModalOpen) {

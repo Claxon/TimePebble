@@ -16,6 +16,7 @@ let hiddenEvents = new Set(JSON.parse(localStorage.getItem('hiddenEvents')) || [
 let customEvents = JSON.parse(localStorage.getItem('customEvents')) || [];
 let imageUrls = []; // Temp store for image data URLs
 let currentlyEditingEventId = null;
+let originalEventIdBeingEdited = null; // Tracks the original event ID through multiple edits
 
 // URL parameters have priority over saved settings
 const fileName = urlParams.get('file') || settings.file;
@@ -36,15 +37,15 @@ let eventsData = [];
 
 // Initial page setup based on config
 if (transparentBg) {
-  const style = document.createElement('style');
-  style.textContent = `
+    const style = document.createElement('style');
+    style.textContent = `
     body { background: transparent !important; }
     #fullscreen, #add-event-modal { background: transparent !important; }
     .details-card, .event, .modal-card {
       background: rgba(30,40,60,0.8) !important;
     }
   `;
-  document.head.appendChild(style);
+    document.head.appendChild(style);
 }
 if (layoutOverride === 'split') {
     document.body.classList.add('layout-split-column');

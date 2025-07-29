@@ -23,8 +23,13 @@ function formatDurationMinutes(start, end) {
  * @returns {string} The unique event ID.
  */
 function generateId(e) {
-  const startTime = e.start || new Date().toISOString();
-  return `${startTime}_${e.summary}`;
+    if (e.uniqueId === "") {
+        const startTime = e.start || new Date().toISOString();
+        let uuid = `${startTime}_${e.summary}`;
+        e.uniqueId = uuid;
+        return uuid;
+    }
+    return e.uniqueId;
 }
 
 /**
@@ -136,7 +141,8 @@ function parseCSV(text) {
           description: obj["description"] || "",
           rsvp: (obj["rsvp"] || "").toLowerCase(),
           ooo: (obj["ooo"] || "").toLowerCase(),
-          private: (obj["private"] || "").toLowerCase()
+          private: (obj["private"] || "").toLowerCase(),
+          uniqueId: (obj["entryid"] || "").toLowerCase()
         };
     });
 }

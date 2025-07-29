@@ -54,13 +54,14 @@ while ($true) {
             $restrictedItems = $items.Restrict($filter)
 
             $csv = @()
-            $csv += '"subject","start","end","description","rsvp","private","ooo"'
+            $csv += '"subject","start","end","description","rsvp","private","ooo","entryid"'
 
             foreach ($item in $restrictedItems) {
                 if ($item -and $item.MessageClass -eq "IPM.Appointment" -and $item.Start -and $item.End) {
                     $isPrivate = $item.Sensitivity -eq 2
                     $subject = if ($isPrivate) { "Private Event" } else { ($item.Subject -replace '"', "'") -replace '\r|\n', ' ' }
                     $description = if ($isPrivate) { "Details hidden" } else { ($item.Body -replace '"', "'") -replace '\r|\n', ' ' }
+                    $entryId = $item.EntryID
 
                     $rsvpStatus = switch ($item.MeetingStatus) {
                         1 { "organizer" }
@@ -73,14 +74,15 @@ while ($true) {
                     $privateStr = if ($isPrivate) { "yes" } else { "no" }
                     $oooStr = if ($item.BusyStatus -eq 3) { "yes" } else { "no" }
 
-                    $csv += '"{0}","{1}","{2}","{3}","{4}","{5}","{6}"' -f `
+                    $csv += '"{0}","{1}","{2}","{3}","{4}","{5}","{6}","{7}"' -f `
                         $subject, `
                         $item.Start.ToString("yyyy-MM-dd HH:mm:ss"), `
                         $item.End.ToString("yyyy-MM-dd HH:mm:ss"), `
                         $description, `
                         $rsvpStatus, `
                         $privateStr, `
-                        $oooStr
+                        $oooStr, `
+                        $entryId
                 }
             }
 
