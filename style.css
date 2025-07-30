@@ -4,6 +4,23 @@ body {
     font-family: sans-serif;
     padding: 2em;
 }
+/* --- Custom Scrollbar --- */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #16181e;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4fc3f7;
+    border-radius: 5px;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #aeefff;
+    }
 
 h1 {
     font-size: 2em;
@@ -145,8 +162,9 @@ h1 {
     box-shadow: 0 4px 24px rgba(80,200,255,0.12);
     padding: 2em 2em 1.5em 4em; /* Add padding-left for the toolbox */
     color: #fff;
-    max-width: 450px;
-    margin: 2em auto 0 auto;
+    width: 90%;
+    max-width: 700px; /* Increased max-width */
+    margin: 2em auto;
     font-size: 1.08em;
     border: 1.5px solid #4fc3f7;
     position: relative;
@@ -216,6 +234,13 @@ h1 {
         cursor: pointer;
         border: 2px solid #4fc3f7;
     }
+
+.description-hr {
+    border: none;
+    height: 2px;
+    background-color: #4fc3f7;
+    margin: 1em 0;
+}
 
 .details-description .details-label {
     min-width: 0;
@@ -691,7 +716,7 @@ input:checked + .slider {
     margin-top: 1em;
     transition: background-color 0.2s;
     position: relative;
-    min-height: 150px;
+    min-height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -704,7 +729,7 @@ input:checked + .slider {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        opacity: 0;
+        opacity: 0.1;
         transition: opacity 0.2s;
         pointer-events: none;
         background-color: rgba(0,0,0,0.5);

@@ -169,55 +169,87 @@ function toLocalISOString(date) {
 }
 
 /**
- * Parses CSV data into an array of event objects, handling quoted fields.
+ * Parses CSV data into an array of event objects, handling quoted fields and newlines.
  * @param {string} text - The CSV string.
  * @returns {Array<object>} An array of event objects.
  */
 function parseCSV(text) {
+    //console.log("--- Starting CSV Parse ---");
+    //console.log("Raw CSV Input:", text);
     if (!text) return [];
-    const lines = text.trim().split('\n');
-    if (lines.length < 2) return [];
 
-    const headers = lines.shift().split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+    const rows = [];
+    let currentRow = [];
+    let currentField = '';
+    let inQuote = false;
 
-    return lines.map(line => {
-        const values = [];
-        let inQuote = false;
-        let currentField = '';
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
+    // Normalize line endings and add a newline at the end to ensure the last row is processed.
+    text = text.trim().replace(/\r\n/g, '\n') + '\n';
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+
+        if (inQuote) {
+            if (char === '"' && nextChar === '"') {
+                // This is an escaped quote (""), so add a single quote to the field
+                currentField += '"';
+                i++; // and skip the next character
+            } else if (char === '"') {
+                // This is the closing quote for a field
+                inQuote = false;
+            } else {
+                // This is a regular character inside a quoted field
+                currentField += char;
+            }
+        } else {
             if (char === '"') {
-                if (inQuote && line[i + 1] === '"') {
-                    currentField += '"';
-                    i++; // Skip next quote
-                } else {
-                    inQuote = !inQuote;
-                }
-            } else if (char === ',' && !inQuote) {
-                values.push(currentField.trim());
+                // This is the opening quote for a field
+                inQuote = true;
+            } else if (char === ',') {
+                // A comma separates fields
+                currentRow.push(currentField);
+                currentField = '';
+            } else if (char === '\n') {
+                // A newline separates rows
+                currentRow.push(currentField);
+                rows.push(currentRow);
+                currentRow = [];
                 currentField = '';
             } else {
+                // This is a regular character in an unquoted field
                 currentField += char;
             }
         }
-        values.push(currentField.trim());
+    }
 
+    if (rows.length < 2) {
+        console.warn("CSV parsing resulted in less than 2 rows. No data will be processed.");
+        return [];
+    }
+
+    const headers = rows.shift().map(h => h.trim().toLowerCase().replace(/"/g, ''));
+    //console.log("Detected Headers:", headers);
+
+    const parsedData = rows.map(row => {
         const obj = {};
         headers.forEach((h, i) => {
-            obj[h] = values[i] || undefined;
+            obj[h] = row[i] || undefined;
         });
 
-        // This now returns a plain object, which will be converted to an EventItem
-        // by the EventItemManager.
         return {
-            subject: obj["subject"] || "No subject",
+            subject: obj["subject"],
             start: obj["start"],
             end: obj["end"],
-            description: obj["description"] || "",
+            description: obj["description"],
             rsvp: obj["rsvp"],
             ooo: obj["ooo"],
             private: obj["private"],
             entryid: obj["entryid"]
         };
-    });
+    }).filter(e => e.subject && e.start && e.end); // Filter out empty or invalid rows
+
+    //console.log("Parsed Event Objects:", parsedData);
+    //console.log("--- Finished CSV Parse ---");
+    return parsedData;
 }
