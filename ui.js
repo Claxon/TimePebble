@@ -97,6 +97,13 @@ function showDetailsById(id, options = {}) {
     }
 
     const fullscreen = document.getElementById('fullscreen');
+
+    const closeFullscreen = () => {
+        fullscreen.style.display = 'none';
+        if (autoCloseTimeout) clearTimeout(autoCloseTimeout);
+        setModalOpenState(false);
+    };
+
     setModalOpenState(true);
     if (autoCloseTimeout) clearTimeout(autoCloseTimeout);
 
@@ -148,12 +155,6 @@ function showDetailsById(id, options = {}) {
     `;
 
     fullscreen.style.display = 'flex';
-
-    const closeFullscreen = () => {
-        fullscreen.style.display = 'none';
-        if (autoCloseTimeout) clearTimeout(autoCloseTimeout);
-        setModalOpenState(false);
-    };
 
     fullscreen.querySelector('.close-btn').onclick = closeFullscreen;
     fullscreen.querySelector('#edit-event-btn').onclick = () => {

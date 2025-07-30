@@ -195,6 +195,7 @@ function updateTime() {
 
             if (msSinceStart <= autoCloseDuration && !shownEventDetails.has(eventId)) {
                 shownEventDetails.add(eventId);
+                // This is the only place that should show the details view automatically
                 showDetailsById(eventId, { glow: true });
             }
 
@@ -227,7 +228,7 @@ function renderTodaysAllDayEvents(events) {
         container.style.display = '';
         const title = document.createElement('div');
         title.className = 'all-day-title';
-        title.textContent = "Today's All-Day Events";
+        title.textContent = "All-Day Events";
         container.appendChild(title);
 
         events.forEach(e => {
@@ -236,7 +237,7 @@ function renderTodaysAllDayEvents(events) {
             el.textContent = e.summary;
             if (e.bgColor) el.style.backgroundColor = e.bgColor;
             if (e.textColor) el.style.color = e.textColor;
-            el.onclick = () => showDetailsById(e.uniqueId);
+            el.onclick = () => openAddEventModal(e, true);
             container.appendChild(el);
         });
     } else {
@@ -270,7 +271,6 @@ function createEventElement(e, now) {
         <strong>${e.summary}</strong><br/>
         <span class="event-time-row">${timeDisplay}</span>
         <div class="${timeClass}">${formatDuration(msUntil)}</div>
-        <div class="event-drop-zone">Drop Images</div>
       `;
 
     if (e.isCustom) {
@@ -286,7 +286,8 @@ function createEventElement(e, now) {
     el.dataset.id = e.uniqueId;
     el.dataset.start = e.start;
     el.dataset.end = e.end;
-    el.onclick = () => showDetailsById(e.uniqueId);
+    // **CHANGE**: Clicking an event now opens the edit modal directly.
+    el.onclick = () => openAddEventModal(e, true);
 
     // Add a class to trigger the animation
     el.classList.add('slide-in');
@@ -399,12 +400,6 @@ function scheduleNextReload() {
 
 // --- Initial Application Setup ---
 document.addEventListener('DOMContentLoaded', () => {
-    // The 'now' URL parameter for testing should be set up before anything else
-    const nowParam = urlParams.get('now');
-    if (nowParam) {
-        fakeNow = new Date(nowParam);
-    }
-
     setupSettingsModal();
     setupAddEventModal();
     setupDragAndDrop();
