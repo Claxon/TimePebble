@@ -6,4 +6,4 @@ REM Give the server a moment to start
 timeout /t 2 >nul
 
 REM Open browser (adjust path if needed)
-start "" https://%COMPUTERNAME%:4443/outlook_schedule.html
+start "" https://%COMPUTERNAME%:4443/index.html

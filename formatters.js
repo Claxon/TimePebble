@@ -11,11 +11,11 @@ const descriptionReplacements = [
         regex: /_{10,}/g,
         replacement: '<hr class="description-hr">'
     },
-    // Future rules can be added here, for example:
-    // {
-    //     regex: /\[link:(.*?)]/g,
-    //     replacement: '<a href="$1" target="_blank">$1</a>'
-    // }
+    // Rule 2: Turn URLs into clickable links.
+    //{
+    //    regex: /(https?:\/\/[^\s]+)/g,
+    //    replacement: '<a href="$1" target="_blank" rel="noopener noreferrer" class="description-link">$1</a>'
+    //}
 ];
 
 /**
